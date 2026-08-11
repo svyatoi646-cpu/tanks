@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tanks 25 - Online Working Edition</title>
+<!-- Надежное CDN для PeerJS -->
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body {
+    background: #000;
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  #game-container {
+    position: relative;
+    width: 1000px;
+    height: 700px;
+    background: #000;
+    border: 4px solid #fff;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+  .overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    padding: 20px;
+  }
+  .hidden { display: none !important; }
+
+  h1 { font-size: 24px; color: #ffcc00; margin-bottom: 15px; text-shadow: 3px 3px #ff0000; text-align: center; }
+  p { font-size: 10px; color: #aaa; margin-bottom: 15px; text-align: center; line-height: 1.5; }
+
+  .status-box {
+    background: #111;
+    border: 2px solid #00e5ff;
+    color: #00e5ff;
+    padding: 10px 15px;
+    font-size: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+    max-width: 80%;
+    word-break: break-all;
+  }
+
+  .btn-online {
+    background: #0288d1;
+    border: 3px solid #00e5ff;
+    color: #fff;
+    padding: 14px 24px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    margin-bottom: 15px;
+  }
+  .btn-online:hover { background: #00e5ff; color: #000; }
+
+  .btn-main {
+    background: #ff0000;
+    border: 3px solid #fff;
+    color: #fff;
+    padding: 14px 24px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn-main:hover { background: #00e676; color: #000; }
+
+  .hud {
+    position: absolute;
+    top: 10px; left: 10px; right: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 5;
+  }
+  .hud-item { background: #000; padding: 8px 12px; font-size: 10px; border: 2px solid #fff; }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <div class="hud">
+    <div class="hud-item" id="hud-status" style="color: #ffcc00;">СТАТУС: ОФФЛАЙН</div>
+    <div class="hud-item" id="hud-hp" style="color: #ff3333;">HP: 100</div>
+  </div>
+
+  <canvas id="c" width="1000" height="700"></canvas>
+
+  <div id="menu-screen" class="overlay">
+    <h1>BATTLE TANKS 25 (ONLINE)</h1>
+    
+    <div id="status-box" class="status-box">Режим: Одиночная игра или Ожидание...</div>
+
+    <button class="btn-online" id="btn-copy" onclick="createRoom()">🌐 СОЗДАТЬ ОНЛАЙН ССЫЛКУ</button>
+    <button class="btn-main" onclick="startGame()">▶ СТАРТ (ИГРАТЬ)</button>
+    
+    <p style="margin-top: 20px;">Игрок 1 (Хост): WASD + Пробел<br>Игрок 2 (Гость): Стрелочки + Enter</p>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const MAP_W = 1000;
+const MAP_H = 700;
+
+let gameState = 'MENU';
+let peer = null;
+let conn = null;
+let isHost = true;
+let myPeerId = '';
+
+// Игроки
+const p1 = { x: 300, y: 500, angle: -Math.PI/2, hp: 100, color: '#00e676' };
+const p2 = { x: 700, y: 500, angle: -Math.PI/2, hp: 100, color: '#00e5ff', active: false };
+
+let bullets = [];
+const keys = {};
+
+// Инициализация PeerJS с генерацией короткого ID
+function initPeer() {
+  const customId = 'tank-' + Math.floor(1000 + Math.random() * 9000);
+  peer = new Peer(customId);
+
+  peer.on('open', id => {
+    myPeerId = id;
+    checkHashRoom();
+  });
+
+  peer.on('connection', c => {
+    conn = c;
+    isHost = true;
+    p2.active = true;
+    document.getElementById('status-box').innerText = 'Игрок 2 Подключился! Жмите СТАРТ!';
+    document.getElementById('hud-status').innerText = 'ОНЛАЙН (ХОСТ)';
+    setupConnection();
+  });
+
+  peer.on('error', err => {
+    console.log('Peer error:', err);
+    document.getElementById('status-box').innerText = 'Ошибка сети. Создайте новую ссылку.';
+  });
+}
+
+function checkHashRoom() {
+  const hash = window.location.hash.replace('#', '');
+  if (hash && hash.startsWith('tank-')) {
+    // Если зашли по ссылке друга
+    isHost = false;
+    document.getElementById('status-box').innerText = 'Подключение к хосту...';
+    conn = peer.connect(hash);
+    
+    conn.on('open', () => {
+      document.getElementById('status-box').innerText = 'Успешно подключено к Хосту!';
+      document.getElementById('hud-status').innerText = 'ОНЛАЙН (ГОСТЬ)';
+      p2.active = true;
+      setupConnection();
+    });
+  }
+}
+
+function createRoom() {
+  if (!myPeerId) return;
+  const roomUrl = window.location.origin + window.location.pathname + '#' + myPeerId;
+  
+  navigator.clipboard.writeText(roomUrl).then(() => {
+    document.getElementById('status-box').innerText = 'Ссылка скопирована! Отправь другу:\n' + roomUrl;
+  }).catch(() => {
+    document.getElementById('status-box').innerText = 'Скопируй адрес вручную:\n' + roomUrl;
+  });
+}
+
+function setupConnection() {
+  conn.on('data', data => {
+    if (data.type === 'SYNC' && !isHost) {
+      // Игрок 2 получает позиции от Игрока 1
+      p1.x = data.p1.x; p1.y = data.p1.y; p1.angle = data.p1.angle;
+      p2.x = data.p2.x; p2.y = data.p2.y; p2.angle = data.p2.angle;
+      bullets = data.bullets;
+      gameState = data.gameState;
+      if (gameState === 'PLAY') document.getElementById('menu-screen').classList.add('hidden');
+    } else if (data.type === 'INPUT' && isHost) {
+      // Игрок 1 получает управление от Игрока 2
+      if (data.left) p2.angle -= 0.05;
+      if (data.right) p2.angle += 0.05;
+      if (data.up) {
+        p2.x += Math.cos(p2.angle) * 3;
+        p2.y += Math.sin(p2.angle) * 3;
+      }
+      if (data.shoot) shoot(p2);
+    }
+  });
+}
+
+function startGame() {
+  gameState = 'PLAY';
+  document.getElementById('menu-screen').classList.add('hidden');
+}
+
+window.addEventListener('keydown', e => keys[e.code] = true);
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+function shoot(playerObj) {
+  bullets.push({
+    x: playerObj.x + Math.cos(playerObj.angle) * 20,
+    y: playerObj.y + Math.sin(playerObj.angle) * 20,
+    vx: Math.cos(playerObj.angle) * 7,
+    vy: Math.sin(playerObj.angle) * 7
+  });
+}
+
+function update() {
+  if (gameState !== 'PLAY') return;
+
+  if (isHost) {
+    // Управление Игрока 1 (Хост)
+    if (keys['KeyA']) p1.angle -= 0.05;
+    if (keys['KeyD']) p1.angle += 0.05;
+    if (keys['KeyW']) {
+      p1.x += Math.cos(p1.angle) * 3;
+      p1.y += Math.sin(p1.angle) * 3;
+    }
+    if (keys['Space']) { shoot(p1); keys['Space'] = false; }
+
+    // Если второго игрока нет сети, но играют за одним компом
+    if (!conn) {
+      if (keys['ArrowLeft']) p2.angle -= 0.05;
+      if (keys['ArrowRight']) p2.angle += 0.05;
+      if (keys['ArrowUp']) {
+        p2.x += Math.cos(p2.angle) * 3;
+        p2.y += Math.sin(p2.angle) * 3;
+      }
+      if (keys['Enter']) { shoot(p2); keys['Enter'] = false; }
+    }
+
+    // Движение пуль
+    bullets.forEach((b, i) => {
+      b.x += b.vx; b.y += b.vy;
+      if (b.x < 0 || b.x > MAP_W || b.y < 0 || b.y > MAP_H) bullets.splice(i, 1);
+    });
+
+    // Отправка данных Гостю
+    if (conn && conn.open) {
+      conn.send({
+        type: 'SYNC',
+        p1: { x: p1.x, y: p1.y, angle: p1.angle },
+        p2: { x: p2.x, y: p2.y, angle: p2.angle },
+        bullets: bullets,
+        gameState: gameState
+      });
+    }
+  } else {
+    // Игрок 2 отправляет свои нажатия Хосту
+    if (conn && conn.open) {
+      conn.send({
+        type: 'INPUT',
+        left: keys['ArrowLeft'] || keys['KeyA'],
+        right: keys['ArrowRight'] || keys['KeyD'],
+        up: keys['ArrowUp'] || keys['KeyW'],
+        shoot: keys['Enter'] || keys['Space']
+      });
+      keys['Enter'] = false; keys['Space'] = false;
+    }
+  }
+}
+
+function drawTank(x, y, angle, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.fillStyle = color;
+  ctx.fillRect(-15, -15, 30, 30);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, -3, 20, 6);
+  ctx.restore();
+}
+
+function draw() {
+  ctx.fillStyle = '#111';
+  ctx.fillRect(0, 0, MAP_W, MAP_H);
+
+  if (gameState === 'PLAY') {
+    drawTank(p1.x, p1.y, p1.angle, p1.color);
+    if (p2.active || !conn) drawTank(p2.x, p2.y, p2.angle, p2.color);
+
+    ctx.fillStyle = '#ffcc00';
+    bullets.forEach(b => ctx.fillRect(b.x - 3, b.y - 3, 6, 6));
+  }
+
+  update();
+  requestAnimationFrame(draw);
+}
+
+initPeer();
+draw();
+</script>
+</body>
+</html>
