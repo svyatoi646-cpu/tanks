@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tanks 50 - Mia Boyka Edition</title>
+<title>Tanks 50 - Permanent Upgrades Edition</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -210,7 +210,7 @@
   <canvas id="c" width="1000" height="700"></canvas>
 
   <div id="menu-screen" class="overlay">
-    <h1>TANKS 50: ЭКСПОНАТ EDITION</h1>
+    <h1>TANKS 50: ВСЁ НАВСЕГДА</h1>
     
     <div class="menu-coins" id="menu-coins-display">💰 МОНЕТЫ: 0</div>
 
@@ -219,7 +219,7 @@
       <button class="btn-nav" onclick="openShop()">🛒 МАГАЗИН</button>
     </div>
 
-    <p>КЛИКНИТЕ В ЛЮБОМ МЕСТЕ ДЛЯ ВКЛЮЧЕНИЯ МУЗЫКИ (MIA BOYKA — ЭКСПОНАТ)</p>
+    <p>КЛИКНИТЕ В ЛЮБОМ МЕСТЕ ДЛЯ ВКЛЮЧЕНИЯ МУЗЫКИ</p>
     <div class="level-grid" id="level-grid"></div>
   </div>
 
@@ -230,14 +230,7 @@
         <div style="width: 25px; height: 25px; background: #d50000; border: 2px solid #00e5ff; flex-shrink: 0;"></div>
         <div>
           <div style="color: #00e5ff; font-size: 10px; margin-bottom: 4px;">ЩИТ НА БАЗЕ ВРАГОВ</div>
-          <p style="text-align: left; margin: 0; color: #ccc;">База врага защищена силовым полем (голубая рамка), пока на поле боя есть живые враги. Уничтожьте всех врагов, чтобы щит спал, и атакуйте базу!</p>
-        </div>
-      </div>
-      <div class="tank-desc">
-        <div style="width: 25px; height: 25px; background: #ff0055; border: 2px solid #fff; flex-shrink: 0; box-shadow: 0 0 8px #ff0055;"></div>
-        <div>
-          <div style="color: #ff0055; font-size: 10px; margin-bottom: 4px;">БОСС (КАЖДЫЕ 10 УРОВНЕЙ)</div>
-          <p style="text-align: left; margin: 0; color: #ccc;">Мощный босс со 100 жизнями и призывом подкрепления.</p>
+          <p style="text-align: left; margin: 0; color: #ccc;">База врага защищена силовым полем, пока живы враги. Уничтожьте всех, чтобы снять щит!</p>
         </div>
       </div>
     </div>
@@ -246,7 +239,7 @@
 
   <div id="shop-screen" class="overlay hidden">
     <h1>МАГАЗИН УЛУЧШЕНИЙ</h1>
-    <p style="color: #ffcc00; margin-bottom: 4px;">ПОБЕДА СБРАСЫВАЕТ УЛУЧШЕНИЯ!</p>
+    <p style="color: #00e676; margin-bottom: 4px;">КУПЛЕННОЕ ОСТАЕТСЯ НАВСЕГДА!</p>
     <div id="shop-msg" class="shop-msg"></div>
     <div class="info-box" style="display: flex; flex-direction: column; gap: 12px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -300,10 +293,8 @@ function playShootSound() {
   osc.type = 'sawtooth';
   osc.frequency.setValueAtTime(300, audioCtx.currentTime);
   osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.15);
-  
   gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
   gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-  
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   osc.start();
@@ -316,22 +307,16 @@ function playExplosionSound() {
   let bufferSize = audioCtx.sampleRate * 0.3;
   let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
   let data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = Math.random() * 2 - 1;
-  }
-
+  for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
   let noise = audioCtx.createBufferSource();
   noise.buffer = buffer;
-
   let filter = audioCtx.createBiquadFilter();
   filter.type = 'lowpass';
   filter.frequency.setValueAtTime(800, audioCtx.currentTime);
   filter.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.3);
-
   let gain = audioCtx.createGain();
   gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
   gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-
   noise.connect(filter);
   filter.connect(gain);
   gain.connect(audioCtx.destination);
@@ -341,13 +326,8 @@ function playExplosionSound() {
 function startMenuMusic() {
   stopMenuMusic();
   initAudio();
-  const melody = [
-    330, 330, 392, 330, 261, 294, 330, 0,
-    330, 330, 392, 440, 392, 330, 294, 0,
-    261, 261, 330, 294, 220, 247, 261, 0
-  ];
+  const melody = [330, 330, 392, 330, 261, 294, 330, 0, 330, 330, 392, 440, 392, 330, 294, 0];
   let step = 0;
-
   menuMusicInterval = setInterval(() => {
     if (gameState !== 'MENU' || !audioCtx) return;
     let freq = melody[step % melody.length];
@@ -356,10 +336,8 @@ function startMenuMusic() {
       let gain = audioCtx.createGain();
       osc.type = 'square';
       osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      
       gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
       gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
-
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
@@ -415,7 +393,6 @@ let particles = [];
 let totalEnemiesToSpawn = 0;
 let enemySpawnTimer = 0;
 let enemySpawnInterval = 60;
-
 let boss = null;
 
 let playerBase = { x: 415, y: 540, w: 70, h: 40, hp: 100 };
@@ -523,12 +500,6 @@ function buyUpgrade(type) {
   }
 }
 
-function resetUpgrades() {
-  playerStats = { ...defaultPlayerStats };
-  speedUpgradeIndex = 0;
-  shieldSeconds = 0;
-}
-
 function startLevel(lvl) {
   stopMenuMusic();
   currentLevel = lvl;
@@ -547,6 +518,12 @@ function startLevel(lvl) {
   player.y = MAP_H - 70; 
   player.hp = 100;
   player.angle = -Math.PI / 2;
+
+  // Обновляем таймер щита под текущие купленные секунды при старте уровня
+  if (shieldSeconds > 0) {
+    playerStats.hasShield = true;
+    playerStats.shieldTimer = shieldSeconds * 60;
+  }
 
   playerBase.w = 70; playerBase.h = 40;
   playerBase.x = MAP_W / 2 - 35;
@@ -628,7 +605,6 @@ function spawnSingleEnemy() {
 
 function generateMapWalls() {
   walls.push({ x: playerBase.x - 15, y: playerBase.y - 15, w: playerBase.w + 30, h: 15, hp: 2 });
-  
   if (!isBossLevel) {
     walls.push({ x: enemyBase.x - 40, y: enemyBase.y + enemyBase.h + 20, w: enemyBase.w + 80, h: 20, hp: 4 });
     walls.push({ x: enemyBase.x - 15, y: enemyBase.y + enemyBase.h, w: enemyBase.w + 30, h: 15, hp: 2 });
@@ -715,7 +691,7 @@ function update() {
 
   resolveEntityStuck(player);
 
-  if (playerStats.hasShield) {
+  if (playerStats.hasShield && shieldSeconds > 0) {
     playerStats.shieldTimer--;
     if (playerStats.shieldTimer <= 0) playerStats.hasShield = false;
   }
@@ -755,12 +731,8 @@ function update() {
     let targetX = player.x + dx * moveSpeed;
     let targetY = player.y + dy * moveSpeed;
 
-    if (!checkCollision(targetX, player.y, 12)) {
-      player.x = targetX;
-    }
-    if (!checkCollision(player.x, targetY, 12)) {
-      player.y = targetY;
-    }
+    if (!checkCollision(targetX, player.y, 12)) player.x = targetX;
+    if (!checkCollision(player.x, targetY, 12)) player.y = targetY;
   }
 
   if (isBossLevel && boss) {
@@ -804,7 +776,6 @@ function update() {
       if (boss.hp <= 0) {
         createExplosion(boss.x, boss.y, '#ffcc00', 40);
         coins += 150;
-        resetUpgrades();
         winLevel();
       }
       return;
@@ -819,7 +790,7 @@ function update() {
       enemyBase.hitsLeft--;
       createExplosion(b.x, b.y, '#f44336', 12);
       bullets.splice(bi, 1);
-      if (enemyBase.hitsLeft <= 0) { coins += 40; resetUpgrades(); winLevel(); }
+      if (enemyBase.hitsLeft <= 0) { coins += 40; winLevel(); }
     }
 
     enemies.forEach((e, ei) => {
@@ -885,17 +856,11 @@ function update() {
     let nextX = e.x + Math.cos(e.angle) * currentSpeed;
     let nextY = e.y + Math.sin(e.angle) * currentSpeed;
 
-    if (!checkCollision(nextX, e.y, 12)) {
-      e.x = nextX;
-    } else {
-      e.angle += Math.PI / 2; 
-    }
+    if (!checkCollision(nextX, e.y, 12)) e.x = nextX;
+    else e.angle += Math.PI / 2; 
 
-    if (!checkCollision(e.x, nextY, 12)) {
-      e.y = nextY;
-    } else {
-      e.angle -= Math.PI / 2;
-    }
+    if (!checkCollision(e.x, nextY, 12)) e.y = nextY;
+    else e.angle -= Math.PI / 2;
 
     e.fireTimer++;
     if (e.fireTimer >= e.fireInterval) {
@@ -959,8 +924,8 @@ function winLevel() {
   document.getElementById('end-title').innerText = isBossLevel ? 'БОСС ПОВЕРЖЕН!' : 'ПОБЕДА!';
   document.getElementById('end-title').style.color = '#00e676';
   document.getElementById('end-desc').innerText = isBossLevel 
-    ? `Босс повержен! Награды зачислены.` 
-    : `Уровень пройден! Модификаторы сброшены.`;
+    ? `Босс повержен! Все улучшения и монеты сохранены.` 
+    : `Уровень пройден! Прогресс и улучшения сохранены.`;
   
   document.getElementById('end-screen').classList.remove('hidden');
 }
@@ -1067,7 +1032,7 @@ function draw() {
 
     drawPixelTank(player.x, player.y, player.angle, '#00e676', '#ffffff');
 
-    if (playerStats.hasShield) {
+    if (playerStats.hasShield && shieldSeconds > 0) {
       ctx.strokeStyle = '#00e5ff';
       ctx.lineWidth = 3;
       ctx.shadowBlur = 12;
