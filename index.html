@@ -562,7 +562,7 @@ function startLevel(lvl) {
   boss = null;
 
   generateMapWalls();
-  resolveEntityStuck(player); // Защита от спавна в стене
+  resolveEntityStuck(player);
 
   maxSimultaneousEnemies = Math.min(15, 4 + Math.floor(lvl / 2));
 
@@ -680,11 +680,9 @@ function updateHUD() {
   }
 }
 
-// Усовершенствованная функция коллизий
 function checkCollision(x, y, radius = 12) {
   if (x < radius || x > MAP_W - radius || y < radius || y > MAP_H - radius) return true;
   for (let w of walls) {
-    // Проверка скругленного хитбокса (ближе к кругу, чтобы не цепляться углами)
     let closestX = Math.max(w.x, Math.min(x, w.x + w.w));
     let closestY = Math.max(w.y, Math.min(y, w.y + w.h));
     let distX = x - closestX;
@@ -696,12 +694,8 @@ function checkCollision(x, y, radius = 12) {
   return false;
 }
 
-// Система принудительного выталкивания из стен (Push-out)
 function resolveEntityStuck(entity, radius = 12) {
   if (!checkCollision(entity.x, entity.y, radius)) return;
-  
-  // Если застрял — спиралевидный поиск ближайшей свободной точки
-  let step = 2;
   for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
     for (let dist = 5; dist < 100; dist += 5) {
       let testX = entity.x + Math.cos(angle) * dist;
@@ -719,7 +713,6 @@ function update() {
   if (gameState !== 'PLAY') return;
   if (screenShake > 0) screenShake--;
 
-  // Защитная страховка от застревания в реальном времени
   resolveEntityStuck(player);
 
   if (playerStats.hasShield) {
