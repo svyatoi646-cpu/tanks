@@ -1,81 +1,1088 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="utf-8">
-    <title>Tanks Elite: Warzone</title>
-    <style>
-        body { background: #000; color: #fff; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; }
-        #canvas { border: 2px solid #555; background: #1a1a1a; box-shadow: 0 0 20px rgba(0,255,0,0.2); }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tanks 50 - Mia Boyka Edition</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body {
+    background: #08080c;
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  #game-container {
+    position: relative;
+    width: 1000px;
+    height: 700px;
+    background: #050508;
+    border: 4px solid #333;
+    box-shadow: 0 0 30px rgba(0, 230, 118, 0.2);
+    overflow: hidden;
+  }
+  
+  #game-container:fullscreen {
+    width: 100vw !important;
+    height: 100vh !important;
+    border: none;
+    box-shadow: none;
+  }
+  #game-container:fullscreen canvas {
+    width: 100vw !important;
+    height: 100vh !important;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(5, 5, 8, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    padding: 20px;
+  }
+  .hidden { display: none !important; }
+
+  h1 { 
+    font-size: 18px; 
+    color: #ffcc00; 
+    margin-bottom: 15px;
+    text-shadow: 0 0 10px rgba(255, 204, 0, 0.6), 3px 3px #ff0000;
+    text-align: center;
+  }
+  
+  .menu-coins {
+    font-size: 13px;
+    color: #ffcc00;
+    background: #111;
+    border: 2px solid #ffcc00;
+    padding: 8px 16px;
+    margin-bottom: 15px;
+    box-shadow: 0 0 10px rgba(255, 204, 0, 0.2);
+  }
+
+  p { font-size: 9px; color: #aaa; margin-bottom: 12px; line-height: 1.5; text-align: center; }
+
+  .level-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+    max-width: 650px;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    padding: 5px;
+  }
+  .level-grid::-webkit-scrollbar { width: 8px; }
+  .level-grid::-webkit-scrollbar-track { background: #111; }
+  .level-grid::-webkit-scrollbar-thumb { background: #ffcc00; }
+
+  .lvl-btn {
+    background: #15151a;
+    border: 2px solid #444;
+    color: #fff;
+    padding: 8px 4px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .lvl-btn:hover { background: #00e676; border-color: #fff; color: #000; box-shadow: 0 0 10px #00e676; }
+  .lvl-btn.locked { opacity: 0.3; cursor: not-allowed; border-color: #111; }
+
+  .hud {
+    position: absolute;
+    top: 10px; left: 10px; right: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 5;
+  }
+  .hud-item {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 8px 12px;
+    font-size: 9px;
+    border: 2px solid #444;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  }
+
+  .btn-fullscreen {
+    background: #ffcc00;
+    border: 2px solid #fff;
+    color: #000;
+    padding: 8px 10px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    cursor: pointer;
+  }
+
+  .menu-nav {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .btn-nav {
+    background: #1a1a24;
+    border: 2px solid #ffcc00;
+    color: #fff;
+    padding: 10px 18px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    cursor: pointer;
+  }
+  .btn-nav:hover { background: #ffcc00; color: #000; box-shadow: 0 0 12px #ffcc00; }
+
+  .info-box {
+    background: #111116;
+    border: 2px solid #444;
+    padding: 12px;
+    max-width: 650px;
+    width: 100%;
+    max-height: 280px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+  }
+
+  .info-box::-webkit-scrollbar { width: 8px; }
+  .info-box::-webkit-scrollbar-track { background: #15151a; }
+  .info-box::-webkit-scrollbar-thumb { background: #ffcc00; }
+
+  .tank-desc {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed #333;
+    padding-bottom: 8px;
+  }
+
+  .shop-msg {
+    color: #ff3333;
+    font-size: 9px;
+    height: 15px;
+    margin-bottom: 8px;
+  }
+
+  .btn-main {
+    background: #ff0055;
+    border: 3px solid #fff;
+    color: #fff;
+    padding: 12px 24px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
+  }
+  .btn-main:hover { background: #00e676; color: #000; box-shadow: 0 0 15px #00e676; }
+</style>
 </head>
-<body>
-    <canvas id="canvas" width="1000" height="700"></canvas>
+<body onclick="initAudioUserAction()">
+
+<div id="game-container">
+  <div class="hud">
+    <div style="display: flex; gap: 6px; align-items: center;">
+      <button class="btn-fullscreen" onclick="toggleFullscreen()">[FULL]</button>
+      <div class="hud-item" id="hud-level" style="color: #00e676;">LVL: 1</div>
+    </div>
+    <div style="display: flex; gap: 6px;">
+      <div class="hud-item" id="hud-boss" style="display:none; color: #ff0055;">БОСС: 100/100</div>
+      <div class="hud-item" id="hud-coins" style="color: #ffcc00;">COIN: 0</div>
+      <div class="hud-item" id="hud-hp" style="color: #ff3333;">HP: 100</div>
+    </div>
+  </div>
+
+  <canvas id="c" width="1000" height="700"></canvas>
+
+  <div id="menu-screen" class="overlay">
+    <h1>TANKS 50: ЭКСПОНАТ EDITION</h1>
+    
+    <div class="menu-coins" id="menu-coins-display">💰 МОНЕТЫ: 0</div>
+
+    <div class="menu-nav">
+      <button class="btn-nav" onclick="openTanksInfo()">🛡️ ИНФО</button>
+      <button class="btn-nav" onclick="openShop()">🛒 МАГАЗИН</button>
+    </div>
+
+    <p>КЛИКНИТЕ В ЛЮБОМ МЕСТЕ ДЛЯ ВКЛЮЧЕНИЯ МУЗЫКИ (MIA BOYKA — ЭКСПОНАТ)</p>
+    <div class="level-grid" id="level-grid"></div>
+  </div>
+
+  <div id="tanks-screen" class="overlay hidden">
+    <h1>ПРАВИЛА И ЩИТ БАЗЫ</h1>
+    <div class="info-box">
+      <div class="tank-desc">
+        <div style="width: 25px; height: 25px; background: #d50000; border: 2px solid #00e5ff; flex-shrink: 0;"></div>
+        <div>
+          <div style="color: #00e5ff; font-size: 10px; margin-bottom: 4px;">ЩИТ НА БАЗЕ ВРАГОВ</div>
+          <p style="text-align: left; margin: 0; color: #ccc;">База врага защищена силовым полем (голубая рамка), пока на поле боя есть живые враги или подкрепление. Уничтожьте всех врагов, чтобы щит спал, и атакуйте базу!</p>
+        </div>
+      </div>
+      <div class="tank-desc">
+        <div style="width: 25px; height: 25px; background: #ff0055; border: 2px solid #fff; flex-shrink: 0; box-shadow: 0 0 8px #ff0055;"></div>
+        <div>
+          <div style="color: #ff0055; font-size: 10px; margin-bottom: 4px;">БОСС (КАЖДЫЕ 10 УРОВНЕЙ)</div>
+          <p style="text-align: left; margin: 0; color: #ccc;">Мощный босс со 100 жизнями и призывом подкрепления.</p>
+        </div>
+      </div>
+    </div>
+    <button class="btn-main" onclick="closeSubMenu()">НАЗАД</button>
+  </div>
+
+  <div id="shop-screen" class="overlay hidden">
+    <h1>МАГАЗИН УЛУЧШЕНИЙ</h1>
+    <p style="color: #ffcc00; margin-bottom: 4px;">ПОБЕДА СБРАСЫВАЕТ УЛУЧШЕНИЯ!</p>
+    <div id="shop-msg" class="shop-msg"></div>
+    <div class="info-box" style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 9px;" id="shop-speed-label">СКОРОСТЬ (+1.2)</span>
+        <button class="btn-nav" id="btn-buy-speed" onclick="buyUpgrade('speed')">210 🪙</button>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 9px;">+3.5 СКОРОСТЬ ПУЛИ</span>
+        <button class="btn-nav" onclick="buyUpgrade('bullets')">150 🪙</button>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 9px;" id="shop-shield-label">ЭНЕРГО-ЩИТ (1 СЕК)</span>
+        <button class="btn-nav" id="btn-buy-shield" onclick="buyUpgrade('shield')">30 🪙</button>
+      </div>
+    </div>
+    <button class="btn-main" onclick="closeSubMenu()">НАЗАД</button>
+  </div>
+
+  <div id="end-screen" class="overlay hidden">
+    <h1 id="end-title">ПОБЕДА!</h1>
+    <p id="end-desc">Цель выполнена!</p>
+    <button class="btn-main" onclick="returnToMenu()">В МЕНЮ</button>
+  </div>
+</div>
 
 <script>
-const canvas = document.getElementById('canvas');
+let audioCtx = null;
+let menuMusicInterval = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function initAudioUserAction() {
+  initAudio();
+  if (!menuMusicInterval && gameState === 'MENU') {
+    startMenuMusic();
+  }
+}
+
+function playShootSound() {
+  initAudio();
+  if (!audioCtx) return;
+  let osc = audioCtx.createOscillator();
+  let gain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.15);
+  
+  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+  
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
+}
+
+function playExplosionSound() {
+  initAudio();
+  if (!audioCtx) return;
+  let bufferSize = audioCtx.sampleRate * 0.3;
+  let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  let data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+
+  let noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+
+  let filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+  filter.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+
+  let gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  noise.start();
+}
+
+function startMenuMusic() {
+  stopMenuMusic();
+  initAudio();
+  const melody = [
+    330, 330, 392, 330, 261, 294, 330, 0,
+    330, 330, 392, 440, 392, 330, 294, 0,
+    261, 261, 330, 294, 220, 247, 261, 0
+  ];
+  let step = 0;
+
+  menuMusicInterval = setInterval(() => {
+    if (gameState !== 'MENU' || !audioCtx) return;
+    let freq = melody[step % melody.length];
+    if (freq > 0) {
+      let osc = audioCtx.createOscillator();
+      let gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.18);
+    }
+    step++;
+  }, 160);
+}
+
+function stopMenuMusic() {
+  if (menuMusicInterval) {
+    clearInterval(menuMusicInterval);
+    menuMusicInterval = null;
+  }
+}
+
+const container = document.getElementById('game-container');
+const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
-let particles = [];
+let MAP_W = 900;
+let MAP_H = 600;
+
+let currentLevel = 1;
+let maxUnlockedLevel = 1;
+let coins = 0;
+let gameState = 'MENU';
+let isBossLevel = false;
+
+let maxSimultaneousEnemies = 4;
+let screenShake = 0;
+
+const speedLevels = [
+  { bonus: 1.2, cost: 210 }, { bonus: 1.4, cost: 250 },
+  { bonus: 1.6, cost: 300 }, { bonus: 1.8, cost: 350 },
+  { bonus: 2.0, cost: 400 }, { bonus: 2.2, cost: 450 },
+  { bonus: 2.4, cost: 500 }, { bonus: 2.5, cost: 550 }
+];
+let speedUpgradeIndex = 0;
+let shieldSeconds = 0;
+
+const defaultPlayerStats = { speed: 3.5, bulletSpeed: 7, hasShield: false, shieldTimer: 0 };
+let playerStats = { ...defaultPlayerStats };
+
+const player = { x: 450, y: 520, angle: -Math.PI / 2, hp: 100 };
+
 let bullets = [];
-let shake = 0;
+let enemyBullets = [];
+let enemies = [];
+let walls = [];
+let particles = [];
 
-// Класс взрыва (реализм)
-class Particle {
-    constructor(x, y, color) {
-        this.x = x; this.y = y;
-        this.vx = (Math.random()-0.5)*8; this.vy = (Math.random()-0.5)*8;
-        this.life = 20; this.color = color;
+let totalEnemiesToSpawn = 0;
+let enemySpawnTimer = 0;
+let enemySpawnInterval = 60; // Ускорено появление врагов
+
+let boss = null;
+
+let playerBase = { x: 415, y: 540, w: 70, h: 40, hp: 100 };
+let enemyBase = { x: 415, y: 40, w: 70, h: 40, hitsLeft: 10 };
+
+function updateMenuCoins() {
+  document.getElementById('menu-coins-display').innerText = `💰 МОНЕТЫ: ${coins}`;
+}
+
+function updateShopUI() {
+  const speedLabel = document.getElementById('shop-speed-label');
+  const speedBtn = document.getElementById('btn-buy-speed');
+  if (speedUpgradeIndex < speedLevels.length) {
+    const nextLvl = speedLevels[speedUpgradeIndex];
+    speedLabel.innerText = `СКОРОСТЬ (+${nextLvl.bonus})`;
+    speedBtn.innerText = `${nextLvl.cost} 🪙`;
+    speedBtn.style.opacity = "1";
+  } else {
+    speedLabel.innerText = `СКОРОСТЬ (МАКС)`;
+    speedBtn.innerText = `---`;
+    speedBtn.style.opacity = "0.5";
+  }
+
+  const shieldLabel = document.getElementById('shop-shield-label');
+  const shieldBtn = document.getElementById('btn-buy-shield');
+  const nextShieldSec = shieldSeconds + 1;
+  const nextShieldCost = nextShieldSec * 30;
+  shieldLabel.innerText = `ЭНЕРГО-ЩИТ (${nextShieldSec} СЕК)`;
+  shieldBtn.innerText = `${nextShieldCost} 🪙`;
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    container.requestFullscreen().catch(err => console.log(err));
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+const levelGrid = document.getElementById('level-grid');
+function initLevelGrid() {
+  levelGrid.innerHTML = '';
+  for (let i = 1; i <= 50; i++) {
+    const btn = document.createElement('button');
+    btn.className = `lvl-btn ${i > maxUnlockedLevel ? 'locked' : ''}`;
+    btn.innerText = i % 10 === 0 ? `👹${i}` : i;
+    btn.onclick = (e) => { 
+      e.stopPropagation();
+      if (i <= maxUnlockedLevel) startLevel(i); 
+    };
+    levelGrid.appendChild(btn);
+  }
+}
+initLevelGrid();
+updateMenuCoins();
+startMenuMusic();
+
+function openTanksInfo() {
+  document.getElementById('menu-screen').classList.add('hidden');
+  document.getElementById('tanks-screen').classList.remove('hidden');
+}
+
+function openShop() {
+  document.getElementById('shop-msg').innerText = '';
+  updateShopUI();
+  document.getElementById('menu-screen').classList.add('hidden');
+  document.getElementById('shop-screen').classList.remove('hidden');
+}
+
+function closeSubMenu() {
+  document.getElementById('tanks-screen').classList.add('hidden');
+  document.getElementById('shop-screen').classList.add('hidden');
+  document.getElementById('menu-screen').classList.remove('hidden');
+  updateMenuCoins();
+}
+
+function showShopMessage(msg, isError = true) {
+  const el = document.getElementById('shop-msg');
+  el.style.color = isError ? '#ff3333' : '#00e676';
+  el.innerText = msg;
+}
+
+function buyUpgrade(type) {
+  initAudio();
+  if (type === 'speed') {
+    if (speedUpgradeIndex >= speedLevels.length) { showShopMessage('СКОРОСТЬ МАКСИМАЛЬНА!'); return; }
+    const lvl = speedLevels[speedUpgradeIndex];
+    if (coins >= lvl.cost) {
+      coins -= lvl.cost; playerStats.speed = defaultPlayerStats.speed + lvl.bonus;
+      speedUpgradeIndex++; updateHUD(); updateMenuCoins(); updateShopUI();
+      showShopMessage(`СКОРОСТЬ (+${lvl.bonus}) КУПЛЕНА!`, false);
+    } else { showShopMessage('НЕДОСТАТОЧНО МОНЕТ!'); }
+  } else if (type === 'bullets') {
+    if (coins >= 150) {
+      coins -= 150; playerStats.bulletSpeed += 3.5; updateHUD(); updateMenuCoins();
+      showShopMessage('УСКОРЕНИЕ ПУЛЬ КУПЛЕНО!', false);
+    } else { showShopMessage('НЕДОСТАТОЧНО МОНЕТ!'); }
+  } else if (type === 'shield') {
+    const nextSec = shieldSeconds + 1; const cost = nextSec * 30;
+    if (coins >= cost) {
+      coins -= cost; shieldSeconds = nextSec; playerStats.hasShield = true;
+      playerStats.shieldTimer = shieldSeconds * 60; updateHUD(); updateMenuCoins(); updateShopUI();
+      showShopMessage(`ЩИТ НА ${shieldSeconds} СЕК. КУПЛЕН!`, false);
+    } else { showShopMessage('НЕДОСТАТОЧНО МОНЕТ!'); }
+  }
+}
+
+function resetUpgrades() {
+  playerStats = { ...defaultPlayerStats };
+  speedUpgradeIndex = 0;
+  shieldSeconds = 0;
+}
+
+function startLevel(lvl) {
+  stopMenuMusic();
+  currentLevel = lvl;
+  gameState = 'PLAY';
+  isBossLevel = (lvl % 10 === 0);
+
+  MAP_W = Math.min(1500, 850 + (lvl - 1) * 15);
+  MAP_H = Math.min(1000, 600 + (lvl - 1) * 10);
+  canvas.width = MAP_W;
+  canvas.height = MAP_H;
+
+  document.getElementById('menu-screen').classList.add('hidden');
+  document.getElementById('end-screen').classList.add('hidden');
+
+  player.x = MAP_W / 2; 
+  player.y = MAP_H - 70; 
+  player.hp = 100;
+  player.angle = -Math.PI / 2;
+
+  playerBase.w = 70; playerBase.h = 40;
+  playerBase.x = MAP_W / 2 - 35;
+  playerBase.y = MAP_H - 50;
+  playerBase.hp = 100;
+
+  enemyBase.w = 70; enemyBase.h = 40;
+  enemyBase.x = MAP_W / 2 - 35;
+  enemyBase.y = 40;
+  enemyBase.hitsLeft = 10;
+
+  bullets = []; enemyBullets = []; enemies = []; walls = []; particles = [];
+  boss = null;
+
+  generateMapWalls();
+
+  maxSimultaneousEnemies = Math.min(15, 4 + Math.floor(lvl / 2));
+
+  if (isBossLevel) {
+    document.getElementById('hud-boss').style.display = 'block';
+    boss = {
+      x: MAP_W / 2, y: 120, hp: 100, maxHp: 100,
+      speed: 1.2, angle: Math.PI / 2, fireTimer: 0, fireInterval: 42, spawnMinionTimer: 0
+    };
+    totalEnemiesToSpawn = 0; 
+  } else {
+    document.getElementById('hud-boss').style.display = 'none';
+    totalEnemiesToSpawn = 4 + lvl * 2; 
+  }
+
+  enemySpawnTimer = 0;
+  updateHUD();
+}
+
+function createExplosion(x, y, color = '#ff9100', count = 15) {
+  screenShake = 6;
+  playExplosionSound();
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 4;
+    particles.push({
+      x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      size: 2 + Math.random() * 4, color, alpha: 1, decay: 0.02 + Math.random() * 0.03
+    });
+  }
+}
+
+function spawnSingleEnemy() {
+  if (enemies.length >= maxSimultaneousEnemies) return;
+  let type = 'normal';
+  if (currentLevel >= 3 && Math.random() > 0.5) type = 'fast';
+  if (currentLevel >= 5 && Math.random() > 0.6) type = 'heavy';
+
+  const possibleAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+
+  enemies.push({
+    x: 80 + Math.random() * (MAP_W - 160), 
+    y: isBossLevel ? 200 : 100, 
+    type,
+    hp: type === 'heavy' ? 5 : 1, 
+    maxHp: type === 'heavy' ? 5 : 1,
+    speed: type === 'fast' ? 2.8 : (type === 'heavy' ? 1.3 : 1.8),
+    angle: possibleAngles[Math.floor(Math.random() * possibleAngles.length)], 
+    fireTimer: 0,
+    fireInterval: type === 'fast' ? 40 : (type === 'heavy' ? 60 : 50),
+    changeDirTimer: 0, 
+    abilityTimer: 0, 
+    shieldTimer: 0, 
+    isRaging: false,
+    stuckCounter: 0,
+    lastX: 0,
+    lastY: 0
+  });
+}
+
+function generateMapWalls() {
+  walls.push({ x: playerBase.x - 15, y: playerBase.y - 15, w: playerBase.w + 30, h: 15, hp: 2 });
+  
+  if (!isBossLevel) {
+    walls.push({ x: enemyBase.x - 40, y: enemyBase.y + enemyBase.h + 20, w: enemyBase.w + 80, h: 20, hp: 4 });
+    walls.push({ x: enemyBase.x - 15, y: enemyBase.y + enemyBase.h, w: enemyBase.w + 30, h: 15, hp: 2 });
+  }
+
+  let cols = Math.floor(MAP_W / 110);
+  let rows = Math.floor((MAP_H - 250) / 100);
+
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      let rand = Math.random();
+      let wx = 70 + c * 105;
+      let wy = 140 + r * 100;
+      if (rand < 0.5) {
+        walls.push({ x: wx, y: wy, w: 60, h: 20, hp: 2 });
+      }
     }
-    update() { this.x += this.vx; this.y += this.vy; this.life--; }
-    draw() { ctx.fillStyle = this.color; ctx.fillRect(this.x, this.y, 4, 4); }
+  }
 }
 
-// Рисование крутого танка
-function drawTank(x, y, angle, color) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(angle);
-    ctx.fillStyle = "#333"; // Гусеницы
-    ctx.fillRect(-20, -22, 40, 44);
-    ctx.fillStyle = color; // Корпус
-    ctx.fillRect(-16, -16, 32, 32);
-    ctx.fillStyle = "#fff"; // Башня
-    ctx.fillRect(-8, -8, 16, 16);
-    ctx.fillStyle = "#ffcc00"; // Дуло
-    ctx.fillRect(0, -3, 22, 6);
-    ctx.restore();
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'Space' && gameState === 'PLAY') {
+    e.preventDefault();
+    shootPlayer();
+  }
+});
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+function shootPlayer() {
+  playShootSound();
+  const angle = player.angle ?? -Math.PI / 2;
+  bullets.push({
+    x: player.x + Math.cos(angle) * 24,
+    y: player.y + Math.sin(angle) * 24,
+    vx: Math.cos(angle) * playerStats.bulletSpeed,
+    vy: Math.sin(angle) * playerStats.bulletSpeed,
+    isPlayer: true
+  });
 }
 
-function loop() {
-    // Эффект тряски
-    if(shake > 0) {
-        ctx.setTransform(1, 0, 0, 1, (Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
-        shake *= 0.9;
+function updateHUD() {
+  document.getElementById('hud-level').innerText = `LVL: ${currentLevel}`;
+  document.getElementById('hud-coins').innerText = `COIN: ${coins}`;
+  document.getElementById('hud-hp').innerText = `HP: ${Math.max(0, player.hp)}`;
+  if (isBossLevel && boss) {
+    document.getElementById('hud-boss').innerText = `БОСС: ${boss.hp}/100`;
+  }
+}
+
+function checkCollision(x, y, radius = 13) {
+  if (x < radius || x > MAP_W - radius || y < radius || y > MAP_H - radius) return true;
+  for (let w of walls) {
+    if (x + radius - 2 > w.x && x - radius + 2 < w.x + w.w && y + radius - 2 > w.y && y - radius + 2 < w.y + w.h) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function update() {
+  if (gameState !== 'PLAY') return;
+  if (screenShake > 0) screenShake--;
+
+  if (playerStats.hasShield) {
+    playerStats.shieldTimer--;
+    if (playerStats.shieldTimer <= 0) playerStats.hasShield = false;
+  }
+
+  particles.forEach((p, pi) => {
+    p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
+    if (p.alpha <= 0) particles.splice(pi, 1);
+  });
+
+  if (!isBossLevel) {
+    if (totalEnemiesToSpawn > 0 && enemies.length < maxSimultaneousEnemies) {
+      enemySpawnTimer++;
+      if (enemySpawnTimer >= enemySpawnInterval) {
+        spawnSingleEnemy();
+        totalEnemiesToSpawn--;
+        enemySpawnTimer = 0;
+      }
+    }
+  } else if (boss) {
+    boss.spawnMinionTimer++;
+    if (boss.spawnMinionTimer > 180 && enemies.length < maxSimultaneousEnemies) {
+      boss.spawnMinionTimer = 0;
+      for (let i = 0; i < 2; i++) spawnSingleEnemy();
+    }
+  }
+
+  let dx = 0, dy = 0;
+  if (keys['KeyW'] || keys['ArrowUp']) { player.angle = -Math.PI / 2; dy = -1; }
+  else if (keys['KeyS'] || keys['ArrowDown']) { player.angle = Math.PI / 2; dy = 1; }
+  else if (keys['KeyA'] || keys['ArrowLeft']) { player.angle = Math.PI; dx = -1; }
+  else if (keys['KeyD'] || keys['ArrowRight']) { player.angle = 0; dx = 1; }
+
+  let moveSpeed = playerStats.speed;
+  if (dx !== 0 && dy !== 0) moveSpeed *= 0.7071;
+
+  if (dx !== 0 || dy !== 0) {
+    let targetX = player.x + dx * moveSpeed;
+    let targetY = player.y + dy * moveSpeed;
+
+    if (!checkCollision(targetX, player.y, 13)) {
+      player.x = targetX;
+    }
+    if (!checkCollision(player.x, targetY, 13)) {
+      player.y = targetY;
+    }
+  }
+
+  if (isBossLevel && boss) {
+    if (Math.abs(player.x - boss.x) > Math.abs(player.y - boss.y)) {
+      boss.angle = player.x > boss.x ? 0 : Math.PI;
     } else {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      boss.angle = player.y > boss.y ? Math.PI / 2 : -Math.PI / 2;
     }
+    boss.x += Math.cos(boss.angle) * boss.speed;
+    boss.y += Math.sin(boss.angle) * boss.speed;
+    boss.x = Math.max(40, Math.min(MAP_W - 40, boss.x));
+    boss.y = Math.max(40, Math.min(MAP_H / 2, boss.y));
 
-    ctx.fillStyle = "rgba(26, 26, 26, 0.3)";
-    ctx.fillRect(0, 0, 1000, 700);
+    boss.fireTimer++;
+    if (boss.fireTimer >= boss.fireInterval) {
+      boss.fireTimer = 0;
+      enemyBullets.push({ x: boss.x, y: boss.y, vx: Math.cos(boss.angle) * 6, vy: Math.sin(boss.angle) * 6, isBig: true });
+    }
+  }
 
-    // Обновление частиц
-    particles.forEach((p, i) => {
-        p.update(); p.draw();
-        if(p.life <= 0) particles.splice(i, 1);
+  bullets.forEach((b, bi) => {
+    b.x += b.vx; b.y += b.vy;
+    
+    walls.forEach((w, wi) => {
+      if (b.x > w.x && b.x < w.x + w.w && b.y > w.y && b.y < w.y + w.h) {
+        createExplosion(b.x, b.y, '#ff5722', 5);
+        bullets.splice(bi, 1);
+        w.hp--;
+        if (w.hp <= 0) {
+          createExplosion(w.x + w.w/2, w.y + w.h/2, '#795548', 10);
+          walls.splice(wi, 1);
+        }
+      }
     });
 
-    drawTank(500, 350, Date.now()/1000, "#00e676"); // Танк игрока
+    if (isBossLevel && boss && Math.hypot(b.x - boss.x, b.y - boss.y) < 30) {
+      boss.hp--;
+      createExplosion(b.x, b.y, '#ff0055', 8);
+      bullets.splice(bi, 1);
+      updateHUD();
+      if (boss.hp <= 0) {
+        createExplosion(boss.x, boss.y, '#ffcc00', 40);
+        coins += 150;
+        resetUpgrades();
+        winLevel();
+      }
+      return;
+    }
 
-    requestAnimationFrame(loop);
+    if (!isBossLevel && b.x > enemyBase.x && b.x < enemyBase.x + enemyBase.w && b.y > enemyBase.y && b.y < enemyBase.y + enemyBase.h) {
+      if (enemies.length > 0 || totalEnemiesToSpawn > 0) {
+        createExplosion(b.x, b.y, '#00e5ff', 4);
+        bullets.splice(bi, 1);
+        return;
+      }
+      enemyBase.hitsLeft--;
+      createExplosion(b.x, b.y, '#f44336', 12);
+      bullets.splice(bi, 1);
+      if (enemyBase.hitsLeft <= 0) { coins += 40; resetUpgrades(); winLevel(); }
+    }
+
+    enemies.forEach((e, ei) => {
+      if (Math.hypot(b.x - e.x, b.y - e.y) < 18) {
+        if (e.type === 'normal' && e.shieldTimer > 0) {
+          createExplosion(b.x, b.y, '#00e5ff', 4);
+          bullets.splice(bi, 1);
+          return;
+        }
+        e.hp--;
+        createExplosion(b.x, b.y, '#ffeb3b', 6);
+        bullets.splice(bi, 1);
+
+        if (e.type === 'normal' && e.hp > 0) e.shieldTimer = 90;
+        if (e.hp <= 0) {
+          createExplosion(e.x, e.y, '#ff5722', 20);
+          enemies.splice(ei, 1);
+          coins += 6;
+          updateHUD();
+        }
+      }
+    });
+  });
+
+  enemies.forEach(e => {
+    e.changeDirTimer++;
+    e.abilityTimer++;
+    if (e.shieldTimer > 0) e.shieldTimer--;
+
+    if (e.type === 'heavy' && e.hp <= 2 && !e.isRaging) {
+      e.isRaging = true; e.speed *= 1.4; e.fireInterval = 35;
+    }
+
+    let currentSpeed = e.speed;
+    if (e.type === 'fast' && e.abilityTimer > 180) {
+      currentSpeed *= 2.5;
+      if (e.abilityTimer > 210) e.abilityTimer = 0;
+    }
+
+    if (Math.hypot(e.x - e.lastX, e.y - e.lastY) < 0.4) {
+      e.stuckCounter++;
+    } else {
+      e.stuckCounter = 0;
+    }
+    e.lastX = e.x; e.lastY = e.y;
+
+    if (e.changeDirTimer > 50 || e.stuckCounter > 15) {
+      e.changeDirTimer = 0; 
+      e.stuckCounter = 0;
+      const target = Math.random() > 0.4 ? player : { x: playerBase.x + 35, y: playerBase.y };
+      const possibleAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+      
+      if (Math.abs(target.x - e.x) > Math.abs(target.y - e.y)) {
+        e.angle = target.x > e.x ? 0 : Math.PI;
+      } else {
+        e.angle = target.y > e.y ? Math.PI / 2 : -Math.PI / 2;
+      }
+      if (Math.random() < 0.3) {
+        e.angle = possibleAngles[Math.floor(Math.random() * possibleAngles.length)];
+      }
+    }
+
+    let nextX = e.x + Math.cos(e.angle) * currentSpeed;
+    let nextY = e.y + Math.sin(e.angle) * currentSpeed;
+
+    if (!checkCollision(nextX, e.y, 13)) {
+      e.x = nextX;
+    } else {
+      e.angle += Math.PI / 2; 
+    }
+
+    if (!checkCollision(e.x, nextY, 13)) {
+      e.y = nextY;
+    } else {
+      e.angle -= Math.PI / 2;
+    }
+
+    e.fireTimer++;
+    if (e.fireTimer >= e.fireInterval) {
+      e.fireTimer = 0;
+      enemyBullets.push({ x: e.x, y: e.y, vx: Math.cos(e.angle) * 5, vy: Math.sin(e.angle) * 5, isBig: false });
+    }
+  });
+
+  enemyBullets.forEach((eb, ebi) => {
+    eb.x += eb.vx; eb.y += eb.vy;
+    
+    walls.forEach((w, wi) => {
+      if (eb.x > w.x && eb.x < w.x + w.w && eb.y > w.y && eb.y < w.y + w.h) {
+        createExplosion(eb.x, eb.y, '#ff5722', 4);
+        enemyBullets.splice(ebi, 1);
+        w.hp--;
+        if (w.hp <= 0) walls.splice(wi, 1);
+      }
+    });
+
+    let hitDist = eb.isBig ? 24 : 16;
+    if (Math.hypot(eb.x - player.x, eb.y - player.y) < hitDist) {
+      createExplosion(eb.x, eb.y, '#f44336', eb.isBig ? 15 : 8);
+      enemyBullets.splice(ebi, 1);
+      if (!playerStats.hasShield) {
+        player.hp -= eb.isBig ? 45 : 20; updateHUD();
+        if (player.hp <= 0) gameOver();
+      }
+    }
+
+    if (!isBossLevel && eb.x > playerBase.x && eb.x < playerBase.x + playerBase.w && eb.y > playerBase.y && eb.y < playerBase.y + playerBase.h) {
+      createExplosion(eb.x, eb.y, '#2196f3', 8);
+      enemyBullets.splice(ebi, 1);
+      playerBase.hp -= 25;
+      if (playerBase.hp <= 0) gameOver();
+    }
+  });
 }
 
-// Запуск взрыва при клике
-canvas.addEventListener('mousedown', (e) => {
-    shake = 10;
-    for(let i=0; i<15; i++) particles.push(new Particle(e.clientX-10, e.clientY-10, "#ff4500"));
-});
+function gameOver() {
+  gameState = 'GAMEOVER';
+  document.getElementById('end-title').innerText = 'GAME OVER';
+  document.getElementById('end-title').style.color = '#ff3333';
+  document.getElementById('end-desc').innerText = 'Ваш танк или База уничтожены!';
+  document.getElementById('end-screen').classList.remove('hidden');
+}
 
-loop();
+function winLevel() {
+  gameState = 'WIN';
+  
+  if (currentLevel >= 50) {
+    currentLevel = 50;
+    coins += 100;
+  } else {
+    if (currentLevel === maxUnlockedLevel && maxUnlockedLevel < 50) {
+      maxUnlockedLevel++;
+      initLevelGrid();
+    }
+  }
+
+  document.getElementById('end-title').innerText = isBossLevel ? 'БОСС ПОВЕРЖЕН!' : 'ПОБЕДА!';
+  document.getElementById('end-title').style.color = '#00e676';
+  document.getElementById('end-desc').innerText = isBossLevel 
+    ? `Босс повержен! Награды зачислены.` 
+    : `Уровень пройден! Модификаторы сброшены.`;
+  
+  document.getElementById('end-screen').classList.remove('hidden');
+}
+
+function returnToMenu() {
+  gameState = 'MENU';
+  document.getElementById('end-screen').classList.add('hidden');
+  document.getElementById('menu-screen').classList.remove('hidden');
+  updateMenuCoins();
+  startMenuMusic();
+}
+
+function drawBrickWall(x, y, w, h, hp) {
+  ctx.fillStyle = hp >= 4 ? '#552200' : (hp === 2 ? '#b32d00' : '#731d00');
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = '#2b0000';
+  ctx.lineWidth = 1;
+  for (let bx = x; bx < x + w; bx += 10) {
+    for (let by = y; by < y + h; by += 6) {
+      ctx.strokeRect(bx, by, 10, 6);
+    }
+  }
+}
+
+function drawPixelTank(x, y, angle, color, turretColor, isShielded = false, isRaging = false, isBig = false) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  let scale = isBig ? 2 : 1;
+  ctx.scale(scale, scale);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(-12, -16, 24, 32);
+
+  ctx.fillStyle = '#111';
+  ctx.fillRect(-14, -14, 28, 5);
+  ctx.fillRect(-14, 9, 28, 5);
+
+  ctx.fillStyle = isRaging ? '#ff0000' : color;
+  ctx.fillRect(-10, -9, 20, 18);
+
+  ctx.fillStyle = turretColor;
+  ctx.fillRect(-5, -5, 10, 10);
+  ctx.fillRect(0, -2, 15, 4);
+
+  if (isShielded) {
+    ctx.strokeStyle = '#00e5ff';
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#00e5ff';
+    ctx.strokeRect(-16, -16, 32, 32);
+    ctx.shadowBlur = 0;
+  }
+  ctx.restore();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, MAP_W, MAP_H);
+
+  ctx.save();
+  if (screenShake > 0) {
+    ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+  }
+
+  if (gameState === 'PLAY' || gameState === 'WIN' || gameState === 'GAMEOVER') {
+    ctx.fillStyle = '#1a1a24';
+    ctx.fillRect(0, 0, MAP_W, MAP_H);
+
+    ctx.fillStyle = '#22222f';
+    for (let x = 0; x < MAP_W; x += 40) {
+      for (let y = 0; y < MAP_H; y += 40) {
+        if ((x + y) % 80 === 0) ctx.fillRect(x, y, 40, 40);
+      }
+    }
+
+    walls.forEach(w => drawBrickWall(w.x, w.y, w.w, w.h, w.hp));
+
+    if (!isBossLevel) {
+      ctx.fillStyle = '#0288d1';
+      ctx.fillRect(playerBase.x, playerBase.y, playerBase.w, playerBase.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = '8px "Press Start 2P"';
+      ctx.fillText('БАЗА', playerBase.x + 12, playerBase.y + 25);
+
+      const isBaseShielded = enemies.length > 0 || totalEnemiesToSpawn > 0;
+      ctx.fillStyle = isBaseShielded ? '#5c1d1d' : '#d50000';
+      ctx.fillRect(enemyBase.x, enemyBase.y, enemyBase.w, enemyBase.h);
+      if (isBaseShielded) {
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#00e5ff';
+        ctx.strokeRect(enemyBase.x - 4, enemyBase.y - 4, enemyBase.w + 8, enemyBase.h + 8);
+        ctx.shadowBlur = 0;
+      }
+      ctx.fillStyle = '#fff';
+      ctx.fillText(isBaseShielded ? 'ЩИТ' : `БАЗА:${enemyBase.hitsLeft}`, enemyBase.x + (isBaseShielded ? 15 : 5), enemyBase.y + 25);
+    }
+
+    if (isBossLevel && boss) {
+      drawPixelTank(boss.x, boss.y, boss.angle, '#ff0055', '#ffcc00', false, false, true);
+    }
+
+    drawPixelTank(player.x, player.y, player.angle, '#00e676', '#ffffff');
+
+    if (playerStats.hasShield) {
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#00e5ff';
+      ctx.strokeRect(player.x - 18, player.y - 18, 36, 36);
+      ctx.shadowBlur = 0;
+    }
+
+    enemies.forEach(e => {
+      const c = e.type === 'heavy' ? '#aa00ff' : (e.type === 'fast' ? '#ff9100' : '#ff1744');
+      drawPixelTank(e.x, e.y, e.angle, c, '#ffff00', e.shieldTimer > 0, e.isRaging);
+    });
+
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#ffff00';
+    ctx.fillStyle = '#ffff00';
+    bullets.forEach(b => ctx.fillRect(b.x - 3, b.y - 3, 6, 6));
+
+    enemyBullets.forEach(eb => {
+      ctx.shadowColor = eb.isBig ? '#ff0055' : '#ff1744';
+      ctx.fillStyle = eb.isBig ? '#ff0055' : '#ff1744';
+      let size = eb.isBig ? 6 : 3;
+      ctx.fillRect(eb.x - size, eb.y - size, size * 2, size * 2);
+    });
+    ctx.shadowBlur = 0;
+
+    particles.forEach(p => {
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+      ctx.restore();
+    });
+  }
+
+  ctx.restore();
+  requestAnimationFrame(() => { update(); draw(); });
+}
+
+draw();
 </script>
 </body>
 </html>
