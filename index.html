@@ -1,662 +1,81 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BATTLE TANKS 25 - Online Edition</title>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
-  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-  body {
-    background: #000;
-    color: #fff;
-    font-family: 'Press Start 2P', monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    overflow: hidden;
-  }
-  #game-container {
-    position: relative;
-    width: 1000px;
-    height: 700px;
-    background: #000;
-    border: 4px solid #fff;
-    overflow: hidden;
-  }
-  canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-    image-rendering: pixelated;
-  }
-  .overlay {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.92);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 10;
-    padding: 20px;
-  }
-  .hidden { display: none !important; }
-
-  h1 { font-size: 24px; color: #ffcc00; margin-bottom: 15px; text-shadow: 3px 3px #ff0000; text-align: center; }
-  p { font-size: 10px; color: #aaa; margin-bottom: 15px; text-align: center; line-height: 1.6; }
-
-  .menu-coins {
-    font-size: 14px;
-    color: #ffcc00;
-    background: #111;
-    border: 2px solid #ffcc00;
-    padding: 10px 20px;
-    margin-bottom: 15px;
-  }
-
-  .status-box {
-    background: #111;
-    border: 2px solid #00e5ff;
-    color: #00e5ff;
-    padding: 10px 15px;
-    font-size: 10px;
-    margin-bottom: 15px;
-    text-align: center;
-    max-width: 80%;
-    word-break: break-all;
-  }
-
-  .level-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-    max-width: 500px;
-    margin-bottom: 15px;
-  }
-  .lvl-btn {
-    background: #222;
-    border: 2px solid #555;
-    color: #fff;
-    padding: 10px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 12px;
-    cursor: pointer;
-  }
-  .lvl-btn:hover { background: #00e676; border-color: #fff; color: #000; }
-  .lvl-btn.locked { opacity: 0.3; cursor: not-allowed; border-color: #111; }
-
-  .menu-nav {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
-  }
-
-  .btn-nav {
-    background: #333;
-    border: 2px solid #ffcc00;
-    color: #fff;
-    padding: 10px 16px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 10px;
-    cursor: pointer;
-  }
-  .btn-nav:hover { background: #ffcc00; color: #000; }
-
-  .btn-online {
-    background: #0288d1;
-    border: 2px solid #00e5ff;
-    color: #fff;
-    padding: 10px 16px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 10px;
-    cursor: pointer;
-  }
-  .btn-online:hover { background: #00e5ff; color: #000; }
-
-  .btn-main {
-    background: #ff0000;
-    border: 3px solid #fff;
-    color: #fff;
-    padding: 12px 20px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 11px;
-    cursor: pointer;
-  }
-  .btn-main:hover { background: #00e676; color: #000; }
-
-  .hud {
-    position: absolute;
-    top: 10px; left: 10px; right: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 5;
-  }
-  .hud-item { background: #000; padding: 8px 12px; font-size: 10px; border: 2px solid #fff; }
-
-  .info-box {
-    background: #111;
-    border: 2px solid #fff;
-    padding: 15px;
-    max-width: 600px;
-    width: 100%;
-    margin-bottom: 15px;
-  }
-</style>
+    <meta charset="utf-8">
+    <title>Tanks Elite: Warzone</title>
+    <style>
+        body { background: #000; color: #fff; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; }
+        #canvas { border: 2px solid #555; background: #1a1a1a; box-shadow: 0 0 20px rgba(0,255,0,0.2); }
+    </style>
 </head>
 <body>
-
-<div id="game-container">
-  <div class="hud">
-    <div style="display: flex; gap: 10px;">
-      <div class="hud-item" id="hud-level" style="color: #00e676;">LVL: 1</div>
-      <div class="hud-item" id="hud-status" style="color: #00e5ff;">ОФФЛАЙН</div>
-    </div>
-    <div style="display: flex; gap: 10px;">
-      <div class="hud-item" id="hud-coins" style="color: #ffcc00;">COIN: 0</div>
-      <div class="hud-item" id="hud-hp" style="color: #ff3333;">HP: 100</div>
-    </div>
-  </div>
-
-  <canvas id="c" width="1000" height="700"></canvas>
-
-  <!-- ГЛАВНОЕ МЕНЮ -->
-  <div id="menu-screen" class="overlay">
-    <h1>BATTLE TANKS 25</h1>
-    
-    <div class="menu-coins" id="menu-coins-display">💰 МОНЕТЫ: 0</div>
-    <div id="status-box" class="status-box">Режим: Одиночная игра / Ожидание гостя</div>
-
-    <div class="menu-nav">
-      <button class="btn-nav" onclick="openShop()">🛒 МАГАЗИН</button>
-      <button class="btn-online" id="btn-copy" onclick="createRoom()">🌐 СОЗДАТЬ ОНЛАЙН ССЫЛКУ</button>
-    </div>
-
-    <p>ВЫБЕРИТЕ УРОВЕНЬ</p>
-    <div class="level-grid" id="level-grid"></div>
-    <p style="color: #888; font-size: 8px;">Игрок 1: WASD + Пробел | Игрок 2: Стрелочки + Enter</p>
-  </div>
-
-  <!-- МАГАЗИН -->
-  <div id="shop-screen" class="overlay hidden">
-    <h1>МАГАЗИН УЛУЧШЕНИЙ</h1>
-    <p style="color: #00e676;">УЛУЧШЕНИЯ СОХРАНЯЮТСЯ НАВСЕГДА!</p>
-    <div id="shop-msg" style="color: #ff3333; font-size: 10px; height: 16px; margin-bottom: 10px;"></div>
-    <div class="info-box" style="display: flex; flex-direction: column; gap: 15px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 10px;">+СКОРОСТЬ ТАНКА</span>
-        <button class="btn-nav" onclick="buyUpgrade('speed')">150 🪙</button>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 10px;">+СКОРОСТЬ ВЫСТРЕЛА</span>
-        <button class="btn-nav" onclick="buyUpgrade('bullets')">150 🪙</button>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 10px;">ЭНЕРГО-ЩИТ (5 СЕК)</span>
-        <button class="btn-nav" onclick="buyUpgrade('shield')">200 🪙</button>
-      </div>
-    </div>
-    <button class="btn-main" onclick="closeShop()">НАЗАД В МЕНЮ</button>
-  </div>
-
-  <!-- ЭКРАН КОНЦА ИГРЫ -->
-  <div id="end-screen" class="overlay hidden">
-    <h1 id="end-title">ПОБЕДА!</h1>
-    <p id="end-desc">Вражеская база уничтожена!</p>
-    <button class="btn-main" onclick="returnToMenu()">В МЕНЮ</button>
-  </div>
-</div>
+    <canvas id="canvas" width="1000" height="700"></canvas>
 
 <script>
-const canvas = document.getElementById('c');
+const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-const MAP_W = 1000;
-const MAP_H = 700;
-
-let currentLevel = 1;
-let maxUnlockedLevel = 1;
-let coins = 0;
-let gameState = 'MENU';
-
-// Мультиплеер
-let peer = null;
-let conn = null;
-let isHost = true;
-let myPeerId = '';
-let isMultiplayer = false;
-
-// Прокачка
-let playerSpeed = 3.5;
-let bulletSpeed = 7;
-let hasShield = false;
-let shieldTimer = 0;
-
-// Игроки
-const p1 = { x: 450, y: 620, angle: -Math.PI/2, hp: 100, color: '#00e676' };
-const p2 = { x: 550, y: 620, angle: -Math.PI/2, hp: 100, color: '#00e5ff', active: false };
-
+let particles = [];
 let bullets = [];
-let enemyBullets = [];
-let enemies = [];
-let walls = [];
+let shake = 0;
 
-let playerBase = { x: 465, y: 640, w: 70, h: 40, hp: 100 };
-let enemyBase = { x: 465, y: 20, w: 70, h: 40, hp: 10 };
-
-const keys = {};
-
-function initPeer() {
-  const customId = 'tank-' + Math.floor(1000 + Math.random() * 9000);
-  peer = new Peer(customId);
-
-  peer.on('open', id => {
-    myPeerId = id;
-    checkHashRoom();
-  });
-
-  peer.on('connection', c => {
-    conn = c;
-    isHost = true;
-    isMultiplayer = true;
-    p2.active = true;
-    document.getElementById('status-box').innerText = 'Игрок 2 подключился! Выберите уровень.';
-    document.getElementById('hud-status').innerText = 'КООПЕРАТИВ';
-    setupConnection();
-  });
-}
-
-function checkHashRoom() {
-  const hash = window.location.hash.replace('#', '');
-  if (hash && hash.startsWith('tank-')) {
-    isHost = false;
-    isMultiplayer = true;
-    document.getElementById('status-box').innerText = 'Подключение к хосту...';
-    conn = peer.connect(hash);
-    
-    conn.on('open', () => {
-      document.getElementById('status-box').innerText = 'Успешно подключено к игрок 1!';
-      document.getElementById('hud-status').innerText = 'ИГРОК 2';
-      p2.active = true;
-      setupConnection();
-    });
-  }
-}
-
-function createRoom() {
-  if (!myPeerId) return;
-  const roomUrl = window.location.origin + window.location.pathname + '#' + myPeerId;
-  
-  navigator.clipboard.writeText(roomUrl).then(() => {
-    document.getElementById('status-box').innerText = 'Ссылка скопирована! Отправь другу:\n' + roomUrl;
-  }).catch(() => {
-    document.getElementById('status-box').innerText = 'Скопируй адрес вручную:\n' + roomUrl;
-  });
-}
-
-function setupConnection() {
-  conn.on('data', data => {
-    if (data.type === 'SYNC' && !isHost) {
-      p1.x = data.p1.x; p1.y = data.p1.y; p1.angle = data.p1.angle; p1.hp = data.p1.hp;
-      p2.x = data.p2.x; p2.y = data.p2.y; p2.angle = data.p2.angle; p2.hp = data.p2.hp;
-      enemies = data.enemies;
-      bullets = data.bullets;
-      enemyBullets = data.enemyBullets;
-      walls = data.walls;
-      coins = data.coins;
-      gameState = data.gameState;
-      updateHUD();
-      if (gameState === 'PLAY') document.getElementById('menu-screen').classList.add('hidden');
-    } else if (data.type === 'P2_INPUT' && isHost) {
-      if (data.left) p2.angle -= 0.06;
-      if (data.right) p2.angle += 0.06;
-      if (data.up) {
-        p2.x += Math.cos(p2.angle) * playerSpeed;
-        p2.y += Math.sin(p2.angle) * playerSpeed;
-      }
-      if (data.shoot) shoot(p2);
+// Класс взрыва (реализм)
+class Particle {
+    constructor(x, y, color) {
+        this.x = x; this.y = y;
+        this.vx = (Math.random()-0.5)*8; this.vy = (Math.random()-0.5)*8;
+        this.life = 20; this.color = color;
     }
-  });
+    update() { this.x += this.vx; this.y += this.vy; this.life--; }
+    draw() { ctx.fillStyle = this.color; ctx.fillRect(this.x, this.y, 4, 4); }
 }
 
-function initLevelGrid() {
-  const grid = document.getElementById('level-grid');
-  grid.innerHTML = '';
-  for (let i = 1; i <= 25; i++) {
-    const btn = document.createElement('button');
-    btn.className = `lvl-btn ${i > maxUnlockedLevel ? 'locked' : ''}`;
-    btn.innerText = i;
-    btn.onclick = () => { if (i <= maxUnlockedLevel) startLevel(i); };
-    grid.appendChild(btn);
-  }
+// Рисование крутого танка
+function drawTank(x, y, angle, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = "#333"; // Гусеницы
+    ctx.fillRect(-20, -22, 40, 44);
+    ctx.fillStyle = color; // Корпус
+    ctx.fillRect(-16, -16, 32, 32);
+    ctx.fillStyle = "#fff"; // Башня
+    ctx.fillRect(-8, -8, 16, 16);
+    ctx.fillStyle = "#ffcc00"; // Дуло
+    ctx.fillRect(0, -3, 22, 6);
+    ctx.restore();
 }
 
-function updateHUD() {
-  document.getElementById('hud-level').innerText = `LVL: ${currentLevel}`;
-  document.getElementById('hud-coins').innerText = `COIN: ${coins}`;
-  document.getElementById('hud-hp').innerText = `HP: ${Math.max(0, p1.hp)}`;
-  document.getElementById('menu-coins-display').innerText = `💰 МОНЕТЫ: ${coins}`;
-}
-
-function openShop() {
-  document.getElementById('menu-screen').classList.add('hidden');
-  document.getElementById('shop-screen').classList.remove('hidden');
-}
-
-function closeShop() {
-  document.getElementById('shop-screen').classList.add('hidden');
-  document.getElementById('menu-screen').classList.remove('hidden');
-  updateHUD();
-}
-
-function buyUpgrade(type) {
-  const msg = document.getElementById('shop-msg');
-  if (type === 'speed' && coins >= 150) {
-    coins -= 150; playerSpeed += 0.8;
-    msg.style.color = '#00e676'; msg.innerText = 'СКОРОСТЬ УВЕЛИЧЕНА!';
-  } else if (type === 'bullets' && coins >= 150) {
-    coins -= 150; bulletSpeed += 2.5;
-    msg.style.color = '#00e676'; msg.innerText = 'ВЫСТРЕЛЫ УСКОРЕНЫ!';
-  } else if (type === 'shield' && coins >= 200) {
-    coins -= 200; hasShield = true; shieldTimer = 300;
-    msg.style.color = '#00e676'; msg.innerText = 'ЩИТ КУПЛЕН!';
-  } else {
-    msg.style.color = '#ff3333'; msg.innerText = 'НЕДОСТАТОЧНО МОНЕТ!';
-  }
-  updateHUD();
-}
-
-function startLevel(lvl) {
-  currentLevel = lvl;
-  gameState = 'PLAY';
-  document.getElementById('menu-screen').classList.add('hidden');
-  document.getElementById('end-screen').classList.add('hidden');
-
-  p1.x = 450; p1.y = 620; p1.hp = 100;
-  p2.x = 550; p2.y = 620; p2.hp = 100;
-  playerBase.hp = 100;
-  enemyBase.hp = 10 + lvl * 2;
-
-  bullets = []; enemyBullets = []; enemies = []; walls = [];
-  generateWalls();
-
-  const enemyCount = isMultiplayer ? 4 + lvl : 2 + lvl;
-  for (let i = 0; i < enemyCount; i++) {
-    enemies.push({
-      x: 100 + i * 180,
-      y: 100,
-      angle: Math.PI / 2,
-      hp: lvl > 3 ? 2 : 1,
-      speed: 1.5 + (lvl * 0.1),
-      fireTimer: Math.random() * 50
-    });
-  }
-  updateHUD();
-}
-
-function generateWalls() {
-  walls.push({ x: 400, y: 580, w: 200, h: 20, hp: 2 });
-  walls.push({ x: 400, y: 80, w: 200, h: 20, hp: 2 });
-
-  for (let c = 0; c < 6; c++) {
-    for (let r = 0; r < 3; r++) {
-      if (Math.random() < 0.5) {
-        walls.push({
-          x: 120 + c * 140,
-          y: 180 + r * 100,
-          w: 60, h: 20,
-          hp: 2
-        });
-      }
+function loop() {
+    // Эффект тряски
+    if(shake > 0) {
+        ctx.setTransform(1, 0, 0, 1, (Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+        shake *= 0.9;
+    } else {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
-  }
+
+    ctx.fillStyle = "rgba(26, 26, 26, 0.3)";
+    ctx.fillRect(0, 0, 1000, 700);
+
+    // Обновление частиц
+    particles.forEach((p, i) => {
+        p.update(); p.draw();
+        if(p.life <= 0) particles.splice(i, 1);
+    });
+
+    drawTank(500, 350, Date.now()/1000, "#00e676"); // Танк игрока
+
+    requestAnimationFrame(loop);
 }
 
-window.addEventListener('keydown', e => {
-  keys[e.code] = true;
-  if (e.code === 'Space' && gameState === 'PLAY' && isHost) shoot(p1);
-  if (e.code === 'Enter' && gameState === 'PLAY' && !isMultiplayer) shoot(p2);
+// Запуск взрыва при клике
+canvas.addEventListener('mousedown', (e) => {
+    shake = 10;
+    for(let i=0; i<15; i++) particles.push(new Particle(e.clientX-10, e.clientY-10, "#ff4500"));
 });
-window.addEventListener('keyup', e => keys[e.code] = false);
 
-function shoot(playerObj) {
-  bullets.push({
-    x: playerObj.x + Math.cos(playerObj.angle) * 20,
-    y: playerObj.y + Math.sin(playerObj.angle) * 20,
-    vx: Math.cos(playerObj.angle) * bulletSpeed,
-    vy: Math.sin(playerObj.angle) * bulletSpeed
-  });
-}
-
-function update() {
-  if (gameState !== 'PLAY') return;
-
-  if (hasShield) {
-    shieldTimer--;
-    if (shieldTimer <= 0) hasShield = false;
-  }
-
-  if (isHost) {
-    if (keys['KeyA']) p1.angle -= 0.06;
-    if (keys['KeyD']) p1.angle += 0.06;
-    if (keys['KeyW']) {
-      p1.x += Math.cos(p1.angle) * playerSpeed;
-      p1.y += Math.sin(p1.angle) * playerSpeed;
-    }
-    if (keys['KeyS']) {
-      p1.x -= Math.cos(p1.angle) * (playerSpeed * 0.5);
-      p1.y -= Math.sin(p1.angle) * (playerSpeed * 0.5);
-    }
-
-    if (!isMultiplayer) {
-      if (keys['ArrowLeft']) p2.angle -= 0.06;
-      if (keys['ArrowRight']) p2.angle += 0.06;
-      if (keys['ArrowUp']) {
-        p2.x += Math.cos(p2.angle) * playerSpeed;
-        p2.y += Math.sin(p2.angle) * playerSpeed;
-        p2.active = true;
-      }
-    }
-
-    bullets.forEach((b, bi) => {
-      b.x += b.vx; b.y += b.vy;
-
-      walls.forEach((w, wi) => {
-        if (b.x > w.x && b.x < w.x + w.w && b.y > w.y && b.y < w.y + w.h) {
-          bullets.splice(bi, 1);
-          w.hp--;
-          if (w.hp <= 0) walls.splice(wi, 1);
-        }
-      });
-
-      if (b.x > enemyBase.x && b.x < enemyBase.x + enemyBase.w && b.y > enemyBase.y && b.y < enemyBase.y + enemyBase.h) {
-        enemyBase.hp--;
-        bullets.splice(bi, 1);
-        if (enemyBase.hp <= 0) winLevel();
-      }
-
-      enemies.forEach((e, ei) => {
-        if (Math.hypot(b.x - e.x, b.y - e.y) < 18) {
-          e.hp--;
-          bullets.splice(bi, 1);
-          if (e.hp <= 0) {
-            enemies.splice(ei, 1);
-            coins += 10;
-            updateHUD();
-          }
-        }
-      });
-    });
-
-    enemies.forEach(e => {
-      e.x += Math.cos(e.angle) * e.speed;
-      e.y += Math.sin(e.angle) * e.speed;
-
-      if (e.x < 30 || e.x > MAP_W - 30 || e.y < 30 || e.y > MAP_H - 30 || Math.random() < 0.02) {
-        e.angle += Math.PI / 2;
-      }
-
-      e.fireTimer++;
-      if (e.fireTimer >= 60) {
-        e.fireTimer = 0;
-        enemyBullets.push({
-          x: e.x, y: e.y,
-          vx: Math.cos(e.angle) * 4,
-          vy: Math.sin(e.angle) * 4
-        });
-      }
-    });
-
-    enemyBullets.forEach((eb, ebi) => {
-      eb.x += eb.vx; eb.y += eb.vy;
-
-      if (Math.hypot(eb.x - p1.x, eb.y - p1.y) < 16) {
-        enemyBullets.splice(ebi, 1);
-        if (!hasShield) {
-          p1.hp -= 15;
-          updateHUD();
-          if (p1.hp <= 0) gameOver();
-        }
-      }
-
-      if (eb.x > playerBase.x && eb.x < playerBase.x + playerBase.w && eb.y > playerBase.y && eb.y < playerBase.y + playerBase.h) {
-        enemyBullets.splice(ebi, 1);
-        playerBase.hp -= 20;
-        if (playerBase.hp <= 0) gameOver();
-      }
-    });
-
-    if (conn && conn.open) {
-      conn.send({
-        type: 'SYNC',
-        p1: p1, p2: p2,
-        enemies: enemies,
-        bullets: bullets,
-        enemyBullets: enemyBullets,
-        walls: walls,
-        coins: coins,
-        gameState: gameState
-      });
-    }
-  } else {
-    if (conn && conn.open) {
-      conn.send({
-        type: 'P2_INPUT',
-        left: keys['ArrowLeft'] || keys['KeyA'],
-        right: keys['ArrowRight'] || keys['KeyD'],
-        up: keys['ArrowUp'] || keys['KeyW'],
-        shoot: keys['Enter'] || keys['Space']
-      });
-      keys['Enter'] = false; keys['Space'] = false;
-    }
-  }
-}
-
-function winLevel() {
-  gameState = 'WIN';
-  coins += 30;
-  if (currentLevel === maxUnlockedLevel && maxUnlockedLevel < 25) {
-    maxUnlockedLevel++;
-    initLevelGrid();
-  }
-  document.getElementById('end-title').innerText = 'ПОБЕДА!';
-  document.getElementById('end-title').style.color = '#00e676';
-  document.getElementById('end-desc').innerText = 'База уничтожена! +30 монет!';
-  document.getElementById('end-screen').classList.remove('hidden');
-}
-
-function gameOver() {
-  gameState = 'GAMEOVER';
-  document.getElementById('end-title').innerText = 'GAME OVER';
-  document.getElementById('end-title').style.color = '#ff3333';
-  document.getElementById('end-desc').innerText = 'База или ваш танк уничтожены!';
-  document.getElementById('end-screen').classList.remove('hidden');
-}
-
-function returnToMenu() {
-  gameState = 'MENU';
-  document.getElementById('end-screen').classList.add('hidden');
-  document.getElementById('menu-screen').classList.remove('hidden');
-  updateHUD();
-}
-
-function drawBrickWall(x, y, w, h, hp) {
-  ctx.fillStyle = hp === 2 ? '#b32d00' : '#731d00';
-  ctx.fillRect(x, y, w, h);
-  ctx.strokeStyle = '#2b0000';
-  ctx.strokeRect(x, y, w, h);
-}
-
-function drawTank(x, y, angle, color, isShielded = false) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-
-  ctx.fillStyle = '#222';
-  ctx.fillRect(-14, -14, 28, 5);
-  ctx.fillRect(-14, 9, 28, 5);
-
-  ctx.fillStyle = color;
-  ctx.fillRect(-10, -9, 20, 18);
-
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(-4, -4, 8, 8);
-  ctx.fillRect(0, -2, 14, 4);
-
-  if (isShielded) {
-    ctx.strokeStyle = '#00e5ff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(-16, -16, 32, 32);
-  }
-
-  ctx.restore();
-}
-
-function draw() {
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, MAP_W, MAP_H);
-
-  if (gameState === 'PLAY' || gameState === 'WIN' || gameState === 'GAMEOVER') {
-    ctx.fillStyle = '#2e7d32';
-    ctx.fillRect(0, 0, MAP_W, MAP_H);
-
-    walls.forEach(w => drawBrickWall(w.x, w.y, w.w, w.h, w.hp));
-
-    ctx.fillStyle = '#0288d1';
-    ctx.fillRect(playerBase.x, playerBase.y, playerBase.w, playerBase.h);
-    ctx.fillStyle = '#fff';
-    ctx.font = '8px "Press Start 2P"';
-    ctx.fillText(`БАЗА:${playerBase.hp}`, playerBase.x + 5, playerBase.y + 25);
-
-    ctx.fillStyle = '#d50000';
-    ctx.fillRect(enemyBase.x, enemyBase.y, enemyBase.w, enemyBase.h);
-    ctx.fillStyle = '#fff';
-    ctx.fillText(`БАЗА:${enemyBase.hp}`, enemyBase.x + 5, enemyBase.y + 25);
-
-    drawTank(p1.x, p1.y, p1.angle, p1.color, hasShield);
-    if (p2.active || !isMultiplayer) drawTank(p2.x, p2.y, p2.angle, p2.color);
-
-    enemies.forEach(e => drawTank(e.x, e.y, e.angle, '#ff1744'));
-
-    ctx.fillStyle = '#ffff00';
-    bullets.forEach(b => ctx.fillRect(b.x - 3, b.y - 3, 6, 6));
-
-    ctx.fillStyle = '#ff1744';
-    enemyBullets.forEach(eb => ctx.fillRect(eb.x - 3, eb.y - 3, 6, 6));
-  }
-
-  update();
-  requestAnimationFrame(draw);
-}
-
-initPeer();
-initLevelGrid();
-updateHUD();
-draw();
+loop();
 </script>
 </body>
 </html>
