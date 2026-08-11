@@ -230,7 +230,7 @@
         <div style="width: 25px; height: 25px; background: #d50000; border: 2px solid #00e5ff; flex-shrink: 0;"></div>
         <div>
           <div style="color: #00e5ff; font-size: 10px; margin-bottom: 4px;">ЩИТ НА БАЗЕ ВРАГОВ</div>
-          <p style="text-align: left; margin: 0; color: #ccc;">База врага защищена силовым полем (голубая рамка), пока на поле боя есть живые враги или подкрепление. Уничтожьте всех врагов, чтобы щит спал, и атакуйте базу!</p>
+          <p style="text-align: left; margin: 0; color: #ccc;">База врага защищена силовым полем (голубая рамка), пока на поле боя есть живые враги. Уничтожьте всех врагов, чтобы щит спал, и атакуйте базу!</p>
         </div>
       </div>
       <div class="tank-desc">
@@ -414,7 +414,7 @@ let particles = [];
 
 let totalEnemiesToSpawn = 0;
 let enemySpawnTimer = 0;
-let enemySpawnInterval = 60; // Ускорено появление врагов
+let enemySpawnInterval = 60;
 
 let boss = null;
 
@@ -562,6 +562,7 @@ function startLevel(lvl) {
   boss = null;
 
   generateMapWalls();
+  resolveEntityStuck(player); // Защита от спавна в стене
 
   maxSimultaneousEnemies = Math.min(15, 4 + Math.floor(lvl / 2));
 
@@ -602,7 +603,7 @@ function spawnSingleEnemy() {
 
   const possibleAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
 
-  enemies.push({
+  let newEnemy = {
     x: 80 + Math.random() * (MAP_W - 160), 
     y: isBossLevel ? 200 : 100, 
     type,
@@ -619,7 +620,10 @@ function spawnSingleEnemy() {
     stuckCounter: 0,
     lastX: 0,
     lastY: 0
-  });
+  };
+
+  resolveEntityStuck(newEnemy);
+  enemies.push(newEnemy);
 }
 
 function generateMapWalls() {
@@ -676,19 +680,47 @@ function updateHUD() {
   }
 }
 
-function checkCollision(x, y, radius = 13) {
+// Усовершенствованная функция коллизий
+function checkCollision(x, y, radius = 12) {
   if (x < radius || x > MAP_W - radius || y < radius || y > MAP_H - radius) return true;
   for (let w of walls) {
-    if (x + radius - 2 > w.x && x - radius + 2 < w.x + w.w && y + radius - 2 > w.y && y - radius + 2 < w.y + w.h) {
+    // Проверка скругленного хитбокса (ближе к кругу, чтобы не цепляться углами)
+    let closestX = Math.max(w.x, Math.min(x, w.x + w.w));
+    let closestY = Math.max(w.y, Math.min(y, w.y + w.h));
+    let distX = x - closestX;
+    let distY = y - closestY;
+    if ((distX * distX + distY * distY) < (radius * radius)) {
       return true;
     }
   }
   return false;
 }
 
+// Система принудительного выталкивания из стен (Push-out)
+function resolveEntityStuck(entity, radius = 12) {
+  if (!checkCollision(entity.x, entity.y, radius)) return;
+  
+  // Если застрял — спиралевидный поиск ближайшей свободной точки
+  let step = 2;
+  for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+    for (let dist = 5; dist < 100; dist += 5) {
+      let testX = entity.x + Math.cos(angle) * dist;
+      let testY = entity.y + Math.sin(angle) * dist;
+      if (!checkCollision(testX, testY, radius)) {
+        entity.x = testX;
+        entity.y = testY;
+        return;
+      }
+    }
+  }
+}
+
 function update() {
   if (gameState !== 'PLAY') return;
   if (screenShake > 0) screenShake--;
+
+  // Защитная страховка от застревания в реальном времени
+  resolveEntityStuck(player);
 
   if (playerStats.hasShield) {
     playerStats.shieldTimer--;
@@ -730,10 +762,10 @@ function update() {
     let targetX = player.x + dx * moveSpeed;
     let targetY = player.y + dy * moveSpeed;
 
-    if (!checkCollision(targetX, player.y, 13)) {
+    if (!checkCollision(targetX, player.y, 12)) {
       player.x = targetX;
     }
-    if (!checkCollision(player.x, targetY, 13)) {
+    if (!checkCollision(player.x, targetY, 12)) {
       player.y = targetY;
     }
   }
@@ -860,13 +892,13 @@ function update() {
     let nextX = e.x + Math.cos(e.angle) * currentSpeed;
     let nextY = e.y + Math.sin(e.angle) * currentSpeed;
 
-    if (!checkCollision(nextX, e.y, 13)) {
+    if (!checkCollision(nextX, e.y, 12)) {
       e.x = nextX;
     } else {
       e.angle += Math.PI / 2; 
     }
 
-    if (!checkCollision(e.x, nextY, 13)) {
+    if (!checkCollision(e.x, nextY, 12)) {
       e.y = nextY;
     } else {
       e.angle -= Math.PI / 2;
