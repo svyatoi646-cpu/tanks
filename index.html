@@ -1,270 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tanks 50 - Permanent Upgrades Edition</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
-  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-  body {
-    background: #08080c;
-    color: #fff;
-    font-family: 'Press Start 2P', monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    overflow: hidden;
-  }
-  #game-container {
-    position: relative;
-    width: 1000px;
-    height: 700px;
-    background: #050508;
-    border: 4px solid #333;
-    box-shadow: 0 0 30px rgba(0, 230, 118, 0.2);
-    overflow: hidden;
-  }
-  
-  #game-container:fullscreen {
-    width: 100vw !important;
-    height: 100vh !important;
-    border: none;
-    box-shadow: none;
-  }
-  #game-container:fullscreen canvas {
-    width: 100vw !important;
-    height: 100vh !important;
-  }
-
-  canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
-  
-  .overlay {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(5, 5, 8, 0.95);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 10;
-    padding: 20px;
-  }
-  .hidden { display: none !important; }
-
-  h1 { 
-    font-size: 18px; 
-    color: #ffcc00; 
-    margin-bottom: 15px;
-    text-shadow: 0 0 10px rgba(255, 204, 0, 0.6), 3px 3px #ff0000;
-    text-align: center;
-  }
-  
-  .menu-coins {
-    font-size: 13px;
-    color: #ffcc00;
-    background: #111;
-    border: 2px solid #ffcc00;
-    padding: 8px 16px;
-    margin-bottom: 15px;
-    box-shadow: 0 0 10px rgba(255, 204, 0, 0.2);
-  }
-
-  p { font-size: 9px; color: #aaa; margin-bottom: 12px; line-height: 1.5; text-align: center; }
-
-  .level-grid {
-    display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    gap: 6px;
-    max-width: 650px;
-    max-height: 220px;
-    overflow-y: auto;
-    margin-bottom: 15px;
-    padding: 5px;
-  }
-  .level-grid::-webkit-scrollbar { width: 8px; }
-  .level-grid::-webkit-scrollbar-track { background: #111; }
-  .level-grid::-webkit-scrollbar-thumb { background: #ffcc00; }
-
-  .lvl-btn {
-    background: #15151a;
-    border: 2px solid #444;
-    color: #fff;
-    padding: 8px 4px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 9px;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  .lvl-btn:hover { background: #00e676; border-color: #fff; color: #000; box-shadow: 0 0 10px #00e676; }
-  .lvl-btn.locked { opacity: 0.3; cursor: not-allowed; border-color: #111; }
-
-  .hud {
-    position: absolute;
-    top: 10px; left: 10px; right: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 5;
-  }
-  .hud-item {
-    background: rgba(0, 0, 0, 0.8);
-    padding: 8px 12px;
-    font-size: 9px;
-    border: 2px solid #444;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-  }
-
-  .btn-fullscreen {
-    background: #ffcc00;
-    border: 2px solid #fff;
-    color: #000;
-    padding: 8px 10px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 8px;
-    cursor: pointer;
-  }
-
-  .menu-nav {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
-  }
-
-  .btn-nav {
-    background: #1a1a24;
-    border: 2px solid #ffcc00;
-    color: #fff;
-    padding: 10px 18px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 10px;
-    cursor: pointer;
-  }
-  .btn-nav:hover { background: #ffcc00; color: #000; box-shadow: 0 0 12px #ffcc00; }
-
-  .info-box {
-    background: #111116;
-    border: 2px solid #444;
-    padding: 12px;
-    max-width: 650px;
-    width: 100%;
-    max-height: 280px;
-    overflow-y: auto;
-    margin-bottom: 12px;
-  }
-
-  .info-box::-webkit-scrollbar { width: 8px; }
-  .info-box::-webkit-scrollbar-track { background: #15151a; }
-  .info-box::-webkit-scrollbar-thumb { background: #ffcc00; }
-
-  .tank-desc {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-    border-bottom: 1px dashed #333;
-    padding-bottom: 8px;
-  }
-
-  .shop-msg {
-    color: #ff3333;
-    font-size: 9px;
-    height: 15px;
-    margin-bottom: 8px;
-  }
-
-  .btn-main {
-    background: #ff0055;
-    border: 3px solid #fff;
-    color: #fff;
-    padding: 12px 24px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 11px;
-    cursor: pointer;
-    box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
-  }
-  .btn-main:hover { background: #00e676; color: #000; box-shadow: 0 0 15px #00e676; }
-</style>
-</head>
-<body onclick="initAudioUserAction()">
-
-<div id="game-container">
-  <div class="hud">
-    <div style="display: flex; gap: 6px; align-items: center;">
-      <button class="btn-fullscreen" onclick="toggleFullscreen()">[FULL]</button>
-      <div class="hud-item" id="hud-level" style="color: #00e676;">LVL: 1</div>
-    </div>
-    <div style="display: flex; gap: 6px;">
-      <div class="hud-item" id="hud-boss" style="display:none; color: #ff0055;">БОСС: 100/100</div>
-      <div class="hud-item" id="hud-coins" style="color: #ffcc00;">COIN: 0</div>
-      <div class="hud-item" id="hud-hp" style="color: #ff3333;">HP: 100</div>
-    </div>
-  </div>
-
-  <canvas id="c" width="1000" height="700"></canvas>
-
-  <div id="menu-screen" class="overlay">
-    <h1>TANKS 50: ВСЁ НАВСЕГДА</h1>
-    
-    <div class="menu-coins" id="menu-coins-display">💰 МОНЕТЫ: 0</div>
-
-    <div class="menu-nav">
-      <button class="btn-nav" onclick="openTanksInfo()">🛡️ ИНФО</button>
-      <button class="btn-nav" onclick="openShop()">🛒 МАГАЗИН</button>
-    </div>
-
-    <p>КЛИКНИТЕ В ЛЮБОМ МЕСТЕ ДЛЯ ВКЛЮЧЕНИЯ МУЗЫКИ</p>
-    <div class="level-grid" id="level-grid"></div>
-  </div>
-
-  <div id="tanks-screen" class="overlay hidden">
-    <h1>ПРАВИЛА И ЩИТ БАЗЫ</h1>
-    <div class="info-box">
-      <div class="tank-desc">
-        <div style="width: 25px; height: 25px; background: #d50000; border: 2px solid #00e5ff; flex-shrink: 0;"></div>
-        <div>
-          <div style="color: #00e5ff; font-size: 10px; margin-bottom: 4px;">ЩИТ НА БАЗЕ ВРАГОВ</div>
-          <p style="text-align: left; margin: 0; color: #ccc;">База врага защищена силовым полем, пока живы враги. Уничтожьте всех, чтобы снять щит!</p>
-        </div>
-      </div>
-    </div>
-    <button class="btn-main" onclick="closeSubMenu()">НАЗАД</button>
-  </div>
-
-  <div id="shop-screen" class="overlay hidden">
-    <h1>МАГАЗИН УЛУЧШЕНИЙ</h1>
-    <p style="color: #00e676; margin-bottom: 4px;">КУПЛЕННОЕ ОСТАЕТСЯ НАВСЕГДА!</p>
-    <div id="shop-msg" class="shop-msg"></div>
-    <div class="info-box" style="display: flex; flex-direction: column; gap: 12px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 9px;" id="shop-speed-label">СКОРОСТЬ (+1.2)</span>
-        <button class="btn-nav" id="btn-buy-speed" onclick="buyUpgrade('speed')">210 🪙</button>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 9px;">+3.5 СКОРОСТЬ ПУЛИ</span>
-        <button class="btn-nav" onclick="buyUpgrade('bullets')">150 🪙</button>
-      </div>
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 9px;" id="shop-shield-label">ЭНЕРГО-ЩИТ (1 СЕК)</span>
-        <button class="btn-nav" id="btn-buy-shield" onclick="buyUpgrade('shield')">30 🪙</button>
-      </div>
-    </div>
-    <button class="btn-main" onclick="closeSubMenu()">НАЗАД</button>
-  </div>
-
-  <div id="end-screen" class="overlay hidden">
-    <h1 id="end-title">ПОБЕДА!</h1>
-    <p id="end-desc">Цель выполнена!</p>
-    <button class="btn-main" onclick="returnToMenu()">В МЕНЮ</button>
-  </div>
-</div>
-
 <script>
 let audioCtx = null;
 let menuMusicInterval = null;
@@ -304,7 +37,7 @@ function playShootSound() {
 function playExplosionSound() {
   initAudio();
   if (!audioCtx) return;
-  let bufferSize = audioCtx.sampleRate * 0.3;
+  let bufferSize = audioCtx.sampleRate * 0.4;
   let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
   let data = buffer.getChannelData(0);
   for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
@@ -312,11 +45,11 @@ function playExplosionSound() {
   noise.buffer = buffer;
   let filter = audioCtx.createBiquadFilter();
   filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(800, audioCtx.currentTime);
-  filter.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+  filter.frequency.setValueAtTime(600, audioCtx.currentTime);
+  filter.frequency.linearRampToValueAtTime(30, audioCtx.currentTime + 0.4);
   let gain = audioCtx.createGain();
-  gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-  gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+  gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
   noise.connect(filter);
   filter.connect(gain);
   gain.connect(audioCtx.destination);
@@ -370,25 +103,38 @@ let isBossLevel = false;
 let maxSimultaneousEnemies = 4;
 let screenShake = 0;
 
+// Новая таблица цен и бонусов скорости танка
 const speedLevels = [
-  { bonus: 1.2, cost: 210 }, { bonus: 1.4, cost: 250 },
-  { bonus: 1.6, cost: 300 }, { bonus: 1.8, cost: 350 },
-  { bonus: 2.0, cost: 400 }, { bonus: 2.2, cost: 450 },
-  { bonus: 2.4, cost: 500 }, { bonus: 2.5, cost: 550 }
+  { bonus: 1.2, cost: 200 },
+  { bonus: 1.4, cost: 250 },
+  { bonus: 1.6, cost: 300 },
+  { bonus: 1.8, cost: 350 },
+  { bonus: 2.0, cost: 400 },
+  { bonus: 2.2, cost: 450 },
+  { bonus: 2.4, cost: 500 },
+  { bonus: 2.6, cost: 550 }
 ];
 let speedUpgradeIndex = 0;
-let shieldSeconds = 0;
+let shieldSeconds = 0; // Максимум 6 секунд
 
-const defaultPlayerStats = { speed: 3.5, bulletSpeed: 7, hasShield: false, shieldTimer: 0 };
+// Уровни скорострельности (пулеметные апгрейды)
+const fireRateLevels = [
+  { name: 'Ускоренная стрельба', cost: 200, multiplier: 1.5 },
+  { name: 'Двойной темп стрельбы', cost: 500, multiplier: 2.0 }
+];
+let fireRateUpgradeIndex = 0;
+
+const defaultPlayerStats = { speed: 3.5, bulletSpeed: 7, fireInterval: 30, hasShield: false, shieldTimer: 0 };
 let playerStats = { ...defaultPlayerStats };
 
-const player = { x: 450, y: 520, angle: -Math.PI / 2, hp: 100 };
+const player = { x: 450, y: 520, angle: -Math.PI / 2, hp: 100, shootCooldown: 0 };
 
 let bullets = [];
 let enemyBullets = [];
 let enemies = [];
 let walls = [];
 let particles = [];
+let tracks = [];
 
 let totalEnemiesToSpawn = 0;
 let enemySpawnTimer = 0;
@@ -403,6 +149,7 @@ function updateMenuCoins() {
 }
 
 function updateShopUI() {
+  // Скорость танка
   const speedLabel = document.getElementById('shop-speed-label');
   const speedBtn = document.getElementById('btn-buy-speed');
   if (speedUpgradeIndex < speedLevels.length) {
@@ -416,12 +163,45 @@ function updateShopUI() {
     speedBtn.style.opacity = "0.5";
   }
 
+  // Скорострельность
+  const fireLabel = document.getElementById('shop-fire-label'); // Убедитесь, что в HTML есть этот ID, либо добавьте в магазин
+  const fireBtn = document.getElementById('btn-buy-fire');
+  if (fireRateUpgradeIndex < fireRateLevels.length) {
+    const nextFire = fireRateLevels[fireRateUpgradeIndex];
+    if(fireLabel) fireLabel.innerText = nextFire.name.toUpperCase();
+    if(fireBtn) {
+      fireBtn.innerText = `${nextFire.cost} 🪙`;
+      fireBtn.style.opacity = "1";
+    }
+  } else {
+    if(fireLabel) fireLabel.innerText = `ТЕМП СТРЕЛЬБЫ (МАКС)`;
+    if(fireBtn) {
+      fireBtn.innerText = `---`;
+      fireBtn.style.opacity = "0.5";
+    }
+  }
+
+  // Щит (до 6 секунд по вашему условию)
   const shieldLabel = document.getElementById('shop-shield-label');
   const shieldBtn = document.getElementById('btn-buy-shield');
   const nextShieldSec = shieldSeconds + 1;
-  const nextShieldCost = nextShieldSec * 30;
-  shieldLabel.innerText = `ЭНЕРГО-ЩИТ (${nextShieldSec} СЕК)`;
-  shieldBtn.innerText = `${nextShieldCost} 🪙`;
+  
+  if (nextShieldSec <= 6) {
+    let shieldCost = 100;
+    if (nextShieldSec === 2) shieldCost = 130;
+    else if (nextShieldSec === 3) shieldCost = 160;
+    else if (nextShieldSec === 4) shieldCost = 190;
+    else if (nextShieldSec === 5) shieldCost = 220;
+    else if (nextShieldSec === 6) shieldCost = 250;
+
+    shieldLabel.innerText = `ЭНЕРГО-ЩИТ (${nextShieldSec} СЕК)`;
+    shieldBtn.innerText = `${shieldCost} 🪙`;
+    shieldBtn.style.opacity = "1";
+  } else {
+    shieldLabel.innerText = `ЭНЕРГО-ЩИТ (МАКС 6 СЕК)`;
+    shieldBtn.innerText = `---`;
+    shieldBtn.style.opacity = "0.5";
+  }
 }
 
 function toggleFullscreen() {
@@ -481,20 +261,39 @@ function buyUpgrade(type) {
     if (speedUpgradeIndex >= speedLevels.length) { showShopMessage('СКОРОСТЬ МАКСИМАЛЬНА!'); return; }
     const lvl = speedLevels[speedUpgradeIndex];
     if (coins >= lvl.cost) {
-      coins -= lvl.cost; playerStats.speed = defaultPlayerStats.speed + lvl.bonus;
-      speedUpgradeIndex++; updateHUD(); updateMenuCoins(); updateShopUI();
-      showShopMessage(`СКОРОСТЬ (+${lvl.bonus}) КУПЛЕНА!`, false);
+      coins -= lvl.cost; 
+      speedUpgradeIndex++;
+      let currentBonus = speedLevels.slice(0, speedUpgradeIndex).reduce((sum, item) => sum + item.bonus, 1.2);
+      playerStats.speed = defaultPlayerStats.speed + currentBonus - 1.2;
+      updateHUD(); updateMenuCoins(); updateShopUI();
+      showShopMessage(`СКОРОСТЬ УЛУЧШЕНА!`, false);
     } else { showShopMessage('НЕДОСТАТОЧНО МОНЕТ!'); }
-  } else if (type === 'bullets') {
-    if (coins >= 150) {
-      coins -= 150; playerStats.bulletSpeed += 3.5; updateHUD(); updateMenuCoins();
-      showShopMessage('УСКОРЕНИЕ ПУЛЬ КУПЛЕНО!', false);
+  } else if (type === 'fireRate') {
+    if (fireRateUpgradeIndex >= fireRateLevels.length) { showShopMessage('СКОРОСТЬ СТРЕЛЬБЫ МАКСИМАЛЬНА!'); return; }
+    const nextFire = fireRateLevels[fireRateUpgradeIndex];
+    if (coins >= nextFire.cost) {
+      coins -= nextFire.cost;
+      fireRateUpgradeIndex++;
+      playerStats.fireInterval = Math.max(8, Math.floor(defaultPlayerStats.fireInterval / nextFire.multiplier));
+      updateHUD(); updateMenuCoins(); updateShopUI();
+      showShopMessage('СКОРОСТЬ СТРЕЛЬБЫ УВЕЛИЧЕНА!', false);
     } else { showShopMessage('НЕДОСТАТОЧНО МОНЕТ!'); }
   } else if (type === 'shield') {
-    const nextSec = shieldSeconds + 1; const cost = nextSec * 30;
+    if (shieldSeconds >= 6) { showShopMessage('ЩИТ МАКСИМАЛЕН (6 СЕК)!'); return; }
+    const nextSec = shieldSeconds + 1;
+    let cost = 100;
+    if (nextSec === 2) cost = 130;
+    else if (nextSec === 3) cost = 160;
+    else if (nextSec === 4) cost = 190;
+    else if (nextSec === 5) cost = 220;
+    else if (nextSec === 6) cost = 250;
+
     if (coins >= cost) {
-      coins -= cost; shieldSeconds = nextSec; playerStats.hasShield = true;
-      playerStats.shieldTimer = shieldSeconds * 60; updateHUD(); updateMenuCoins(); updateShopUI();
+      coins -= cost; 
+      shieldSeconds = nextSec; 
+      playerStats.hasShield = true;
+      playerStats.shieldTimer = shieldSeconds * 60; 
+      updateHUD(); updateMenuCoins(); updateShopUI();
       showShopMessage(`ЩИТ НА ${shieldSeconds} СЕК. КУПЛЕН!`, false);
     } else { showShopMessage('НЕДОСТАТОЧНО МОНЕТ!'); }
   }
@@ -518,8 +317,8 @@ function startLevel(lvl) {
   player.y = MAP_H - 70; 
   player.hp = 100;
   player.angle = -Math.PI / 2;
+  player.shootCooldown = 0;
 
-  // Обновляем таймер щита под текущие купленные секунды при старте уровня
   if (shieldSeconds > 0) {
     playerStats.hasShield = true;
     playerStats.shieldTimer = shieldSeconds * 60;
@@ -535,7 +334,7 @@ function startLevel(lvl) {
   enemyBase.y = 40;
   enemyBase.hitsLeft = 10;
 
-  bullets = []; enemyBullets = []; enemies = []; walls = []; particles = [];
+  bullets = []; enemyBullets = []; enemies = []; walls = []; particles = []; tracks = [];
   boss = null;
 
   generateMapWalls();
@@ -559,8 +358,38 @@ function startLevel(lvl) {
   updateHUD();
 }
 
-function createExplosion(x, y, color = '#ff9100', count = 15) {
-  screenShake = 6;
+// Реалистичный мощный взрыв танка с разлетающимися кусками брони и искрами
+function createRealisticTankExplosion(x, y) {
+  screenShake = 10;
+  playExplosionSound();
+  
+  // Клубы дыма и огня
+  for (let i = 0; i < 30; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 6;
+    particles.push({
+      x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      size: 3 + Math.random() * 8, 
+      color: Math.random() > 0.4 ? '#ff5722' : '#ff9100', 
+      alpha: 1, decay: 0.015 + Math.random() * 0.02
+    });
+  }
+
+  // Металлические осколки гусениц и брони
+  for (let i = 0; i < 12; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 7;
+    particles.push({
+      x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      size: 2 + Math.random() * 3, 
+      color: '#333333', 
+      alpha: 1, decay: 0.01 + Math.random() * 0.015
+    });
+  }
+}
+
+function createExplosion(x, y, color = '#ff9100', count = 12) {
+  screenShake = 5;
   playExplosionSound();
   for (let i = 0; i < count; i++) {
     const angle = Math.random() * Math.PI * 2;
@@ -630,12 +459,13 @@ window.addEventListener('keydown', e => {
   keys[e.code] = true;
   if (e.code === 'Space' && gameState === 'PLAY') {
     e.preventDefault();
-    shootPlayer();
+    attemptShootPlayer();
   }
 });
 window.addEventListener('keyup', e => keys[e.code] = false);
 
-function shootPlayer() {
+function attemptShootPlayer() {
+  if (player.shootCooldown > 0) return;
   playShootSound();
   const angle = player.angle ?? -Math.PI / 2;
   bullets.push({
@@ -645,6 +475,7 @@ function shootPlayer() {
     vy: Math.sin(angle) * playerStats.bulletSpeed,
     isPlayer: true
   });
+  player.shootCooldown = playerStats.fireInterval;
 }
 
 function updateHUD() {
@@ -689,6 +520,9 @@ function update() {
   if (gameState !== 'PLAY') return;
   if (screenShake > 0) screenShake--;
 
+  if (player.shootCooldown > 0) player.shootCooldown--;
+  if (keys['Space']) attemptShootPlayer();
+
   resolveEntityStuck(player);
 
   if (playerStats.hasShield && shieldSeconds > 0) {
@@ -699,6 +533,11 @@ function update() {
   particles.forEach((p, pi) => {
     p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
     if (p.alpha <= 0) particles.splice(pi, 1);
+  });
+
+  tracks.forEach((t, ti) => {
+    t.alpha -= 0.002;
+    if (t.alpha <= 0) tracks.splice(ti, 1);
   });
 
   if (!isBossLevel) {
@@ -733,6 +572,10 @@ function update() {
 
     if (!checkCollision(targetX, player.y, 12)) player.x = targetX;
     if (!checkCollision(player.x, targetY, 12)) player.y = targetY;
+
+    if (Math.random() < 0.3) {
+      tracks.push({ x: player.x, y: player.y, alpha: 0.4 });
+    }
   }
 
   if (isBossLevel && boss) {
@@ -774,7 +617,7 @@ function update() {
       bullets.splice(bi, 1);
       updateHUD();
       if (boss.hp <= 0) {
-        createExplosion(boss.x, boss.y, '#ffcc00', 40);
+        createRealisticTankExplosion(boss.x, boss.y);
         coins += 150;
         winLevel();
       }
@@ -790,7 +633,12 @@ function update() {
       enemyBase.hitsLeft--;
       createExplosion(b.x, b.y, '#f44336', 12);
       bullets.splice(bi, 1);
-      if (enemyBase.hitsLeft <= 0) { coins += 40; winLevel(); }
+      
+      // За поломку базы противников даем ровно 30 монет
+      coins += 30; 
+      updateHUD();
+
+      if (enemyBase.hitsLeft <= 0) { winLevel(); }
     }
 
     enemies.forEach((e, ei) => {
@@ -806,7 +654,8 @@ function update() {
 
         if (e.type === 'normal' && e.hp > 0) e.shieldTimer = 90;
         if (e.hp <= 0) {
-          createExplosion(e.x, e.y, '#ff5722', 20);
+          // Реалистичный взрыв танка
+          createRealisticTankExplosion(e.x, e.y);
           enemies.splice(ei, 1);
           coins += 6;
           updateHUD();
@@ -887,7 +736,10 @@ function update() {
       enemyBullets.splice(ebi, 1);
       if (!playerStats.hasShield) {
         player.hp -= eb.isBig ? 45 : 20; updateHUD();
-        if (player.hp <= 0) gameOver();
+        if (player.hp <= 0) {
+          createRealisticTankExplosion(player.x, player.y);
+          gameOver();
+        }
       }
     }
 
@@ -992,15 +844,20 @@ function draw() {
   }
 
   if (gameState === 'PLAY' || gameState === 'WIN' || gameState === 'GAMEOVER') {
-    ctx.fillStyle = '#1a1a24';
+    ctx.fillStyle = '#0f1f14';
     ctx.fillRect(0, 0, MAP_W, MAP_H);
 
-    ctx.fillStyle = '#22222f';
+    ctx.fillStyle = '#14291a';
     for (let x = 0; x < MAP_W; x += 40) {
       for (let y = 0; y < MAP_H; y += 40) {
         if ((x + y) % 80 === 0) ctx.fillRect(x, y, 40, 40);
       }
     }
+
+    tracks.forEach(t => {
+      ctx.fillStyle = `rgba(5, 15, 8, ${t.alpha})`;
+      ctx.fillRect(t.x - 6, t.y - 6, 12, 12);
+    });
 
     walls.forEach(w => drawBrickWall(w.x, w.y, w.w, w.h, w.hp));
 
@@ -1035,44 +892,42 @@ function draw() {
     if (playerStats.hasShield && shieldSeconds > 0) {
       ctx.strokeStyle = '#00e5ff';
       ctx.lineWidth = 3;
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 10;
       ctx.shadowColor = '#00e5ff';
-      ctx.strokeRect(player.x - 18, player.y - 18, 36, 36);
+      ctx.strokeRect(player.x - 16, player.y - 16, 32, 32);
       ctx.shadowBlur = 0;
     }
 
-    enemies.forEach(e => {
-      const c = e.type === 'heavy' ? '#aa00ff' : (e.type === 'fast' ? '#ff9100' : '#ff1744');
-      drawPixelTank(e.x, e.y, e.angle, c, '#ffff00', e.shieldTimer > 0, e.isRaging);
+    bullets.forEach(b => {
+      ctx.fillStyle = '#ffeb3b';
+      ctx.fillRect(b.x - 3, b.y - 3, 6, 6);
     });
-
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = '#ffff00';
-    ctx.fillStyle = '#ffff00';
-    bullets.forEach(b => ctx.fillRect(b.x - 3, b.y - 3, 6, 6));
 
     enemyBullets.forEach(eb => {
-      ctx.shadowColor = eb.isBig ? '#ff0055' : '#ff1744';
-      ctx.fillStyle = eb.isBig ? '#ff0055' : '#ff1744';
-      let size = eb.isBig ? 6 : 3;
-      ctx.fillRect(eb.x - size, eb.y - size, size * 2, size * 2);
+      ctx.fillStyle = eb.isBig ? '#ff0055' : '#ff9800';
+      let r = eb.isBig ? 6 : 4;
+      ctx.fillRect(eb.x - r, eb.y - r, r * 2, r * 2);
     });
-    ctx.shadowBlur = 0;
+
+    enemies.forEach(e => {
+      drawPixelTank(e.x, e.y, e.angle, e.type === 'fast' ? '#00e5ff' : (e.type === 'heavy' ? '#ab47bc' : '#ff9100'), '#ffffff', e.type === 'normal' && e.shieldTimer > 0, e.isRaging);
+    });
 
     particles.forEach(p => {
-      ctx.save();
-      ctx.globalAlpha = p.alpha;
       ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.alpha;
       ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
-      ctx.restore();
+      ctx.globalAlpha = 1;
     });
   }
-
   ctx.restore();
-  requestAnimationFrame(() => { update(); draw(); });
 }
 
-draw();
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+requestAnimationFrame(gameLoop);
 </script>
-</body>
-</html>
